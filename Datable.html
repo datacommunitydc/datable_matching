@@ -79,9 +79,15 @@
               var major = this["Describe yourself in one sentence."];
               if(major===null) major = "-";
               var minor = this["Please describe three data science or data related projects you've worked on in the last three years. These can be features of larger projects, consulting projects, classified work described generally, or open source contributions."];
-              return "<div class='major'>" + major + "</div>"+
-                "<div class='_contact'> CONTACT </div><br>"+
-                ((minor!==null)?("<div class='minor'>"+minor+"</div>"):"");
+              return "<div>" +
+                "<div class='col-md-3'>" +
+                  "<div class='major'>" + major + "</div>"+
+                  ((minor!==null)?("<div class='minor'>"+minor+"</div>"):"")+
+                "</div>"+
+                "<div class='col-md-3'>" +
+                  "<div class='_contact'>" + CONTACT + "</div>" +
+                "</div>" +
+              "</div>";
             },
             onDOM: function(d){
               d3.select(d.DOM.record).select("._contact").on("click",
