@@ -15,7 +15,7 @@
     <script type="text/javascript" src="./keshif.js" charset="utf-8"></script>
     <link rel="stylesheet" href="./keshif.css" type="text/css">
     <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">-->
     <!-- TO HERE -->
 
     <script type="text/javascript">
@@ -29,8 +29,8 @@
           leftPanelLabelWidth: 230,
           middlePanelLabelWidth: 230,
           source: {
-            gdocId: '1y83VOWlGV4GThxp1xQlDH4Sz74bmja-EibflTfqnySU',
-            tables: "Form_Responses_1"
+            gdocId: '1O0zxuuLB_wRRAbf80O7WkKFl0ie-P4prhmJDSjNdtUk',
+            tables: "Candidate_Pool"
           },
           summaries: [
             // { name: "When was the last time you committed code?" },
@@ -81,20 +81,25 @@
               if(major===null) major = "-";
               var minor = this["Please describe three data science or data related projects you've worked on in the last three years. These can be features of larger projects, consulting projects, classified work described generally, or open source contributions."];
               return "<div>" +
-                "<div class='col-md-3'>" +
                   "<div class='major'>" + major + "</div>"+
-                  ((minor!==null)?("<div class='minor'>"+minor+"</div>"):"")+
-                "</div>"+
-                "<div class='col-md-3'>" +
-                  "<div class='_contact'> CONTACT </div>" +
-                "</div>" +
+                  "<table style='width:100%'>" +
+                    "<tr>" +
+                      "<td>"+
+                        ((minor!==null)?("<div class='minor'>"+minor+"</div>"):"")+
+                      "</td>" +
+                      "<td>"+
+                        "<div class='_contact'> Add </div>" +
+                      "</td>"+
+                    "</tr>" +
+                  "</table>" +
               "</div>";
             },
             onDOM: function(d){
               d3.select(d.DOM.record).select("._contact").on("click",
                 function(){
                   // This is where you customize the link and redirect, etc.
-                  alert(d.data.id);
+                  window.open("www.datacommunitydc.org/sponsorship/candidate-pool-introduction");
+//                  alert(d.data.id);
                 });
             }
           }
