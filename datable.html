@@ -1,0 +1,186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Datable Candidates</title>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script src="./js/jquery-1.11.1.min.js"></script>
+    <script src="./js/d3.3.5.5.min.js"></script>
+    <script type="text/javascript" src="./keshif.js" charset="utf-8"></script>
+    <link rel="stylesheet" href="./keshif.css" type="text/css">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
+
+    <script type="text/javascript">
+
+      // Copy this section
+      google.setOnLoadCallback(function(){
+        browser = new kshf.Browser({
+          domID: "#datable_demo", // This is the DOM id, might be different for your page.
+          itemName: "Datable Candidates",
+          barChartWidth: 100,
+          leftPanelLabelWidth: 230,
+          middlePanelLabelWidth: 230,
+          source: {
+            gdocId: '1O0zxuuLB_wRRAbf80O7WkKFl0ie-P4prhmJDSjNdtUk',
+            tables: "Candidate_Pool"
+          },
+          summaries: [
+            // { name: "When was the last time you committed code?" },
+            { name: "Experience Level", value: "What's your experience level?" },
+            { name: "Degrees earned", value: 'What Degrees have you earned?', catSplit: ", " },
+            { name: "Data Science Techniques", value: "What Data Science techniques have you worked with?", catSplit: ", " },
+            { name: "Languages and Libraries", value: "What languages & libraries do you use?", catSplit: ", " },
+            { name: "Community and Engagement",
+              description: "My description",
+              value: function(){
+                var r=[];
+                if(this["Have you managed teams before?"]==="Yes")
+                    r.push("Managed teams before");
+                if(this["Have you ever presented your work at an event?"]==="Yes")
+                    r.push("Presented at an event");
+                if(this["Startup and/or Business Experience?"]==="Yes")
+                    r.push("Startup and/or Business Experience");
+                if(this["Have you accepted or would you accept freelance work?"]==="Yes")
+                    r.push("Accepted/ would accept freelance work");
+                if(this["Are you a US Citizen?"]==="Yes")
+                    r.push("US Citizen");
+                if(this["Are you a community organizer?"]==="Yes")
+                    r.push("Community Organizer");
+                if(this["Have you ever founded a startup, or joined a startup in the early stages, that achieved market traction or better?"]==="Yes")
+                    r.push("Found/Jound an early-stage startup");
+                if(this["Have you ever been involved with BD, sales, or managed a client relationship?"]==="Yes")
+                    r.push("BD/ sales / management in client relationships");
+                if(this["Do you volunteer for others' community events?"]==="Yes")
+                    r.push("Volunteered at community events");
+                if(this["Have you provided successful introductions to another community organizer?"]==="Yes")
+                    r.push("Provided introductions to another community organizer");
+                if(this[""]==="Yes") r.push("");
+                return r;
+              } },
+            { name: "Security Clearance", value: 'Do you have a Security Clearance?', collapsed: true, panel: 'middle' },
+
+            { name: "Experience in Sectors", value: 'What sectors have you worked in?', collapsed: true, catSplit: ", " },
+
+            { name: "When was the last time you committed code?", panel: "middle", collapsed: true },
+
+            { name: "Data Community DC Events Attended", catSplit: ", ", panel: 'middle', collapsed: true },
+          ],
+          recordDisplay: {
+            sortColWidth: 45,
+            textSearch: "Describe yourself in one sentence.",
+            recordView: function(){
+              var major = this["Describe yourself in one sentence."];
+              if(major===null) major = "-";
+              var minor = this["Please describe three data science or data related projects you've worked on in the last three years. These can be features of larger projects, consulting projects, classified work described generally, or open source contributions."];
+              return "<div>" +
+                  "<div class='major'>" + major + "</div>"+
+                  "<table style='width:100%'>" +
+                    "<tr>" +
+                      "<td>"+
+                        ((minor!==null)?("<div class='minor'>"+minor+"</div>"):"")+
+                      "</td>" +
+                      "<td>"+
+                        "<div class='_contact'> Add </div>" +
+                      "</td>"+
+                    "</tr>" +
+                  "</table>" +
+              "</div>";
+            },
+            onDOM: function(d){
+              d3.select(d.DOM.record).select("._contact").on("click",
+                function(){
+                  // This is where you customize the link and redirect, etc.
+                  window.open("www.datacommunitydc.org/sponsorship/candidate-pool-introduction");
+//                  alert(d.data.id);
+                });
+            }
+          }
+        });
+      });
+    </script>
+  </head>
+
+  <style>
+    img {
+      padding: 0;
+      max-width: 100%;
+      height: auto;
+    }
+    #DC2logo {
+      padding:0;
+      max-width: 100%;
+      height: auto;
+    }
+    .head_button {
+      position: relative;
+      left:0px;
+      margin-bottom: 0;
+      margin-top: 10px;
+    }
+    .center {
+      display: block;
+      text-align: center;
+      margin: 0;
+      margin-top: 10px;
+      width: 80%;
+      padding: 0;
+    }
+    #logos {
+      margin: 20px;
+    }
+    #candidate_intros {
+      margin: 5px;
+      padding: 0;
+    }
+  </style>
+
+  <body>
+    <div class="contents">
+      <div class="row">
+        <div class="ten columns">
+          <div id="header" class="row">
+            <div class="four columns">
+              <img id="DC2logo" src="./images/DC2_logo_wide_600wide.png"/>
+            </div>
+
+            <div class="eight columns center">
+              <h3>  </h3>
+            </div>
+          </div>
+
+          <div class="row">
+            <div id="logos" class="one column center">
+              <img src="./images/GI-helix-large.png"/>
+              <img src="./images/Keshif-logo.png"/>
+            </div>
+
+            <div id="datable_demo" class="center eleven columns">
+              <!--<img id="keshif" src="./images/maxresdefault.jpg">-->
+            </div>
+          </div>
+        </div>
+
+        <div id="candidate_intros" class="two columns">
+          <a class="head_button button button-primary" target="_blank" href="www.datacommunitydc.org/sponsorship/candidate-pool-introduction">Request Introductions</a>
+          <a class="head_button button" target="_blank" href="https://docs.google.com/spreadsheets/d/1hSAnjE6eRH-fvL4A6s1CSurIP-e2wcwLDF14AFvAeu0/edit#gid=864063755">See The Raw List</a>
+          <table class="u-full-width">
+            <thead>
+              <tr>
+                <th>Candidates Selected</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>#9</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </body>
+</html>
