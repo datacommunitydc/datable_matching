@@ -30,6 +30,33 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ************************************ */
+.kshfLogo {
+  display: inline-block;
+}
+.kshfLogo > .kshfLogo_C1 {
+  -webkit-transition: fill 300ms linear;
+  -moz-transition: fill 300ms linear;
+  -o-transition: fill 300ms linear;
+  transition: fill 300ms linear;
+  fill: #FF6925;
+}
+.kshfLogo > .kshfLogo_C2 {
+  -webkit-transition: fill 300ms linear;
+  -moz-transition: fill 300ms linear;
+  -o-transition: fill 300ms linear;
+  transition: fill 300ms linear;
+  fill: #7295BE;
+}
+.kshfLogo > .kshfLogo_B {
+  stroke: black;
+  stroke-width: 4px;
+}
+.kshfLogo:hover > .kshfLogo_C1 {
+  fill: #7295BE;
+}
+.kshfLogo:hover > .kshfLogo_C2 {
+  fill: #FF6925;
+}
 .kshf {
   display: -webkit-box;
   display: -moz-box;
@@ -358,7 +385,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .kshf[showDropZone=true][dropSource="browser"] > .attributePanel > .attributeList > .dropZone_AttribList {
   display: block;
 }
-.kshf[showDropZone=true][dropattrtype~="unique"] .recordDisplay[hasRecordView="false"] {
+.kshf[showDropZone=true] .recordDisplay[hasRecordView="false"] {
   -webkit-box-flex: 1;
   -moz-box-flex: 1;
   -webkit-flex: 1;
@@ -366,7 +393,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   flex: 1;
   min-height: 50px;
 }
-.kshf[showDropZone=true][dropattrtype~="unique"] .dropZone_recordView {
+.kshf[showDropZone=true] .dropZone_recordView {
   display: block !important;
 }
 .kshf[showDropZone=true][dropattrtype~="categorical"][dropattrtype~="singlevalue"] .dropZone_textSearch {
@@ -1267,6 +1294,20 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   text-decoration: none;
   color: #635d46;
 }
+.kshf .panel_Basic > .rightBoxes > .logoHost {
+  margin-left: 2px;
+  cursor: pointer;
+}
+.kshf .panel_Basic > .rightBoxes > .logoHost > .kshfLogo {
+  width: 1.1em;
+  height: 1.1em;
+  display: inline-block;
+  vertical-align: top;
+}
+.kshf .panel_Basic > .rightBoxes > .logoHost > .kshfLogo:hover {
+  border-radius: 1em;
+  border: solid 1px gray;
+}
 .kshf .panel_Basic:hover .saveSelection {
   color: black;
 }
@@ -1950,6 +1991,10 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 }
 .kshf .panel.panel_overlay > .overlay_infobox .libName:hover {
   color: orangered;
+}
+.kshf .panel.panel_overlay > .overlay_infobox .libName > .kshfLogo {
+  height: 1em;
+  vertical-align: top;
 }
 .kshf .panel.panel_overlay > .overlay_infobox .project_fund {
   clear: both;
@@ -4915,7 +4960,7 @@ top:calc(50% - 8px);
   width: 8px;
 }
 .kshf .Summary_Set > .belowMatrix > .matrixInfo .subsetCount_Text:after {
-  content: " Subsets âŠ†";
+  content: " Subsets ⊆";
 }
 .kshf .scrollToTop {
   display: inline-block;
