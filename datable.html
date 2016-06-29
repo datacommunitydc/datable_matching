@@ -8,30 +8,17 @@
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script src="./js/jquery-1.11.1.min.js"></script>
     <script src="./js/d3.3.5.5.min.js"></script>
+    
     <script type="text/javascript" src="./keshif.js" charset="utf-8"></script>
     <link rel="stylesheet" href="./keshif.css" type="text/css">
+
     <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600" rel="stylesheet">
 
     <script type="text/javascript">
 var browser;
 
-function refreshSelectedList(){
-  var str="";
-  browser.records.forEach(function(candidate){
-    if(candidate.customSelect){
-      str='<span class="selectBox">'+candidate.id()+"</span>"+str;
-    }
-  });
-  $("#SelectedContainer").html(str);
-};
-
 google.setOnLoadCallback(function(){
-  add2cart = '<form class="selectBox" target="paypal" action="https://www.paypal.com/cgi-bin/webscr" method="post">' +
-              '<input type="hidden" name="cmd" value="_s-xclick">' +
-              '<input type="hidden" name="hosted_button_id" value="6NKAMDC6VZ2AQ">' +
-              '<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_cart_SM.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">' +
-              '<img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">' +
-            '</form>';
   browser = new kshf.Browser({
     domID: "#datable_demo", // This is the DOM id, might be different for your page.
     itemName: "Datable Candidates",
@@ -42,9 +29,28 @@ google.setOnLoadCallback(function(){
       gdocId: '1O0zxuuLB_wRRAbf80O7WkKFl0ie-P4prhmJDSjNdtUk',
       tables: "Candidate_Pool"
     },
+    loadedCb: function(){
+      this.records.forEach(function(r){
+        r.data.rand = r.data.id;
+      });
+      // shuffle ( http://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array )
+      for(var i = this.records.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var temp = this.records[i].data.rand;
+          this.records[i].data.rand = this.records[j].data.rand;
+          this.records[j].data.rand = temp;
+      }
+    },
     summaries: [
       // { name: "When was the last time you committed code?" },
-      { name: "Experience Level", value: "What's your experience level?" },
+      { name: "Experience Level", value: "What's your experience level?",
+        catSortBy: [
+          "Veteran (10+ years)",
+          "Senior (5+ years)",
+          "Mid-Level (3-5 years)",
+          "Junior (1-3 years)",
+          "Entry Level (0 years)"
+        ] },  
       { name: "Degrees earned", value: 'What Degrees have you earned?', catSplit: ", " },
       { name: "Data Science Techniques", value: "What Data Science techniques have you worked with?", catSplit: ", " },
       { name: "Languages and Libraries", value: "What languages & libraries do you use?", catSplit: ", " },
@@ -75,24 +81,40 @@ google.setOnLoadCallback(function(){
           if(this[""]==="Yes") r.push("");
           return r;
         } },
-      { name: "Security Clearance", value: 'Do you have a Security Clearance?', collapsed: true, panel: 'middle' },
 
       { name: "Experience in Sectors", value: 'What sectors have you worked in?', collapsed: true, catSplit: ", " },
 
-      { name: "When was the last time you committed code?", panel: "middle", collapsed: true },
+      { name: "Security Clearance", value: 'Do you have a Security Clearance?', collapsed: true, panel: 'left' },
 
-      { name: "Data Community DC Events Attended", catSplit: ", ", panel: 'middle', collapsed: true },
+      //{ name: "When was the last time you committed code?", panel: "middle", collapsed: true },
+
+      //{ name: "Data Community DC Events Attended", catSplit: ", ", panel: 'middle', collapsed: true },
     ],
     recordDisplay: {
-      sortColWidth: 45,
+      // sort by "id" instead of "rand" if you want fixed sort order by candidate id.
+      sortBy: { name: "rand", label: function(){ return "Cand-"+this.id; }}, 
+      sortColWidth: 62,
       textSearch: "Describe yourself in one sentence.",
       recordView: function(){
         var major = this["Describe yourself in one sentence."];
         if(major===null) major = "-";
         var minor = this["Please describe three data science or data related projects you've worked on in the last three years. These can be features of larger projects, consulting projects, classified work described generally, or open source contributions."];
-        return add2cart +
-
+        return  '<form class="PayPalBuyButton"  target="paypal" action="https://www.paypal.com/cgi-bin/webscr" method="post">' +
+              '<input type="hidden" name="cmd" value="_xclick">' +
+              '<INPUT TYPE="hidden" name="charset" value="utf-8">' +
+              '<input type="hidden" name="item_name" value="CandidateIntro_'+this.id+'">' +
+              '<input type="hidden" name="amount" value="35">' +
+              '<input type="hidden" name="tax" value="0">' +
+              '<input type="hidden" name="quantity" value="1">'+
+              '<input type="hidden" name="no_note" value="1">'+
+              '<input type="hidden" name="currency_code" value="USD">'+
+              '<input type="hidden" name="business" value="seang@datacommunitydc.org">'+
+              //'<input type="hidden" name="hosted_button_id" value="6NKAMDC6VZ2AQ">' +
+              '<input class="PayPalSubmit" type="submit" value="Get Introduced!" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">' +
+            '</form>' +
+          // major description
           "<div class='descr_major'>" + major + "</div>"+
+          // minor description
           ((minor!==null)?("<div class='descr_minor'> <span style='font-weight:400'>Experience</span>: "+minor+"</div>"):"")
           ;
       },
@@ -108,7 +130,7 @@ google.setOnLoadCallback(function(){
 //      }
     }
   });
-  $("#kshfLogo").html(kshf.kshfLogo);
+  d3.select("#kshfLogo").html(kshf.kshfLogo);
 });
     </script>
   </head>
@@ -221,252 +243,6 @@ body {
   font-family: "Raleway", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
   color: #222; }
 
-
-/* Typography
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-h1, h2, h3, h4, h5, h6 {
-  margin-top: 0;
-  margin-bottom: 2rem;
-  font-weight: 300; }
-h1 { font-size: 4.0rem; line-height: 1.2;  letter-spacing: -.1rem;}
-h2 { font-size: 3.6rem; line-height: 1.25; letter-spacing: -.1rem; }
-h3 { font-size: 3.0rem; line-height: 1.3;  letter-spacing: -.1rem; }
-h4 { font-size: 2.4rem; line-height: 1.35; letter-spacing: -.08rem; }
-h5 { font-size: 1.8rem; line-height: 1.5;  letter-spacing: -.05rem; }
-h6 { font-size: 1.5rem; line-height: 1.6;  letter-spacing: 0; }
-
-/* Larger than phablet */
-@media (min-width: 550px) {
-  h1 { font-size: 5.0rem; }
-  h2 { font-size: 4.2rem; }
-  h3 { font-size: 3.6rem; }
-  h4 { font-size: 3.0rem; }
-  h5 { font-size: 2.4rem; }
-  h6 { font-size: 1.5rem; }
-}
-
-p {
-  margin-top: 0; }
-
-
-/* Links
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-a {
-  color: #1EAEDB; }
-a:hover {
-  color: #0FA0CE; }
-
-
-/* Buttons
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-.button,
-button,
-input[type="submit"],
-input[type="reset"],
-input[type="button"] {
-  display: inline-block;
-  height: 38px;
-  padding: 0 30px;
-  color: #555;
-  text-align: center;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 38px;
-  letter-spacing: .1rem;
-  text-transform: uppercase;
-  text-decoration: none;
-  white-space: nowrap;
-  background-color: transparent;
-  border-radius: 4px;
-  border: 1px solid #bbb;
-  cursor: pointer;
-  box-sizing: border-box; }
-.button:hover,
-button:hover,
-input[type="submit"]:hover,
-input[type="reset"]:hover,
-input[type="button"]:hover,
-.button:focus,
-button:focus,
-input[type="submit"]:focus,
-input[type="reset"]:focus,
-input[type="button"]:focus {
-  color: #333;
-  border-color: #888;
-  outline: 0; }
-.button.button-primary,
-button.button-primary,
-input[type="submit"].button-primary,
-input[type="reset"].button-primary,
-input[type="button"].button-primary {
-  color: #FFF;
-  background-color: #33C3F0;
-  border-color: #33C3F0; }
-.button.button-primary:hover,
-button.button-primary:hover,
-input[type="submit"].button-primary:hover,
-input[type="reset"].button-primary:hover,
-input[type="button"].button-primary:hover,
-.button.button-primary:focus,
-button.button-primary:focus,
-input[type="submit"].button-primary:focus,
-input[type="reset"].button-primary:focus,
-input[type="button"].button-primary:focus {
-  color: #FFF;
-  background-color: #1EAEDB;
-  border-color: #1EAEDB; }
-
-
-/* Forms
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-input[type="email"],
-input[type="number"],
-input[type="search"],
-input[type="tel"],
-input[type="url"],
-input[type="password"],
-textarea{
-  height: 38px;
-  padding: 6px 10px; /* The 6px vertically centers text on FF, ignored by Webkit */
-  background-color: #fff;
-  border: 1px solid #D1D1D1;
-  border-radius: 4px;
-  box-shadow: none;
-  box-sizing: border-box; }
-/* Removes awkward default styles on some inputs for iOS */
-input[type="email"],
-input[type="number"],
-input[type="search"],
-input[type="tel"],
-input[type="url"],
-input[type="password"],
-textarea {
-  -webkit-appearance: none;
-     -moz-appearance: none;
-          appearance: none; }
-textarea {
-  min-height: 65px;
-  padding-top: 6px;
-  padding-bottom: 6px; }
-input[type="email"]:focus,
-input[type="number"]:focus,
-input[type="search"]:focus,
-input[type="tel"]:focus,
-input[type="url"]:focus,
-input[type="password"]:focus,
-textarea:focus{
-  border: 1px solid #33C3F0;
-  outline: 0; }
-label,
-legend {
-  display: block;
-  margin-bottom: .5rem;
-  font-weight: 600; }
-fieldset {
-  padding: 0;
-  border-width: 0; }
-input[type="checkbox"],
-input[type="radio"] {
-  display: inline; }
-label > .label-body {
-  display: inline-block;
-  margin-left: .5rem;
-  font-weight: normal; }
-
-
-/* Lists
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-ul {
-  list-style: circle inside; }
-ol {
-  list-style: decimal inside; }
-ol, ul {
-  padding-left: 0;
-  margin-top: 0; }
-ul ul,
-ul ol,
-ol ol,
-ol ul {
-  margin: 1.5rem 0 1.5rem 3rem;
-  font-size: 90%; }
-li {
-  margin-bottom: 1rem; }
-
-
-/* Code
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-code {
-  padding: .2rem .5rem;
-  margin: 0 .2rem;
-  font-size: 90%;
-  white-space: nowrap;
-  background: #F1F1F1;
-  border: 1px solid #E1E1E1;
-  border-radius: 4px; }
-pre > code {
-  display: block;
-  padding: 1rem 1.5rem;
-  white-space: pre; }
-
-
-/* Tables
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-th,
-td {
-  padding: 12px 15px;
-  text-align: left;
-  border-bottom: 1px solid #E1E1E1; }
-th:first-child,
-td:first-child {
-  padding-left: 0; }
-th:last-child,
-td:last-child {
-  padding-right: 0; }
-
-
-/* Spacing
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-button,
-.button {
-  margin-bottom: 1rem; }
-textarea,
-fieldset {
-  margin-bottom: 1.5rem; }
-pre,
-blockquote,
-dl,
-figure,
-table,
-p,
-ul,
-ol,
-form {
-  margin-bottom: 2.5rem; }
-
-
-/* Utilities
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-.u-full-width {
-  width: 100%;
-  box-sizing: border-box; }
-.u-max-full-width {
-  max-width: 100%;
-  box-sizing: border-box; }
-.u-pull-right {
-  float: right; }
-.u-pull-left {
-  float: left; }
-
-
-/* Misc
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-hr {
-  margin-top: 3rem;
-  margin-bottom: 3.5rem;
-  border-width: 0;
-  border-top: 1px solid #E1E1E1; }
-
-
 /* Clearing
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
 
@@ -488,19 +264,14 @@ on small devices, paste the mobile query code up in the buttons section and styl
 there.
 */
 
-
 /* Larger than mobile */
 @media (min-width: 400px) {}
-
 /* Larger than phablet (also point when grid becomes active) */
 @media (min-width: 550px) {}
-
 /* Larger than tablet */
 @media (min-width: 750px) {}
-
 /* Larger than desktop */
 @media (min-width: 1000px) {}
-
 /* Larger than Desktop HD */
 @media (min-width: 1200px) {}
 
@@ -526,8 +297,9 @@ img {
   margin: 20px;
 }
 #datable_demo{
-  height: 600px;
+  height: 700px;
   width: 100%;
+  margin-bottom: 30px;
 }
 .descr_major{
   padding-bottom: 3px;
@@ -565,9 +337,40 @@ img {
 ._logo{
   height: 3em;
 }
+
+.PayPalBuyButton{
+  float: right;
+}
+.PayPalSubmit{
+  padding: 3px 10px;
+  margin: 2px;
+  background-color: #fff;
+  border: 1px solid #D1D1D1;
+  border-radius: 4px;
+  box-shadow: none;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+.PayPalSubmit:hover{
+  color: orangered;
+  border-color: orangered;
+}
+.purchaseNote{
+  font-weight: 300;
+  font-size: 0.9em;
+  margin: 1em;
+  font-family: 'Open Sans', sans-serif;
+}
 body{
   background-color: #EEEEEE;
 }
+
+/* Remove some keshif buttons for simplicity */
+.rightBoxes > .fa-question-circle{ display: none !important; }
+.rightBoxes > .showConfigButton{ display: none !important; }
+.rightBoxes > .fullscreen{ display: none !important; }
+.kshf .saveSelection { display: none !important; }
+.kshf .header_listSortColumn{ display: none !important; }
 </style>
 
   <body>
@@ -586,20 +389,13 @@ body{
       </div>
       <div class="row" style="margin-bottom: 15px;">
         <div class="nine columns">
-          <!--<a class="button button-primary" target="_blank" href="http://www.datacommunitydc.org/sponsorship/candidate-pool-introduction">Introduce me Please <i class='fa fa-arrow-right'></i><i class='fa fa-arrow-right'></i></a>-->
-          <form class="selectBox" target="paypal" action="https://www.paypal.com/cgi-bin/webscr" method="post" >
-            <input type="hidden" name="cmd" value="_s-xclick">
-            <input type="hidden" name="encrypted" value="-----BEGIN PKCS7-----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-----END PKCS7-----">
-            <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_viewcart_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
-            <img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
-          </form>
+          <div class="purchaseNote"><u>Note</u>: Each introduction to a candidate of your choice costs $35.<br>
+            You will be directed to PayPal to complete the transaction. For questions, contact TODO.</div>
 
-
-          <div id="SelectedContainer"></div>
         </div>
         <div class="three columns">
           <a class="button" style="margin: 0;position: absolute;right:0px" target="_blank" href="https://youtu.be/3Hmvms-1grU">Tutorial</a>
-          <!--<a class="button" target="_blank" href="https://docs.google.com/spreadsheets/d/1hSAnjE6eRH-fvL4A6s1CSurIP-e2wcwLDF14AFvAeu0/edit#gid=864063755">See The Raw List</a>-->
+          <!-- <a class="button" target="_blank" href="https://docs.google.com/spreadsheets/d/1hSAnjE6eRH-fvL4A6s1CSurIP-e2wcwLDF14AFvAeu0/edit#gid=864063755">See The Raw List</a> -->
         </div>
       </div>
       <div class="row">
@@ -607,29 +403,6 @@ body{
         </div>
         </div>
       </div>
-      <!--
-    <div class="contents">
-      <div class="row">
-        <div class="ten columns">
-          <div id="header" class="row">
-            <div class="four columns">
-              
-            </div>
-
-            <div class="eight columns center">
-              <h3>  </h3>
-            </div>
-          </div>
-
-          <div class="row">
-            <div id="logos" class="one column center">
-            </div>
-
-            
-            </div>
-          </div>
-        </div>-->
-
       </div>
     </div>
     <script src="//d1culzimi74ed4.cloudfront.net/js/feedback/feedback.js"></script>
