@@ -5,14 +5,18 @@
 
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!--Remodal-->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--Remodal-->
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script src="./js/jquery-1.11.1.min.js"></script>
     <script src="./js/d3.3.5.5.min.js"></script>
-    <script src="./js/jquery.steps.min.js"></script>
+    <script src="./js/animatedModal.min.js"></script>
     
     <script type="text/javascript" src="./keshif.js" charset="utf-8"></script>
     <link rel="stylesheet" href="./keshif.css" type="text/css">
 
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/animate.css/3.2.0/animate.min.css">
     <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600" rel="stylesheet">
 
@@ -486,146 +490,22 @@ body{
         });
       </script>
 
-      <!--MODAL CHECKOUT FORM-->
-      <form id="example-form" action="#">
-        <div>
-            <h3>Account</h3>
-            <section>
-                <label for="userName">User name *</label>
-                <input id="userName" name="userName" type="text" class="required">
-                <label for="password">Password *</label>
-                <input id="password" name="password" type="text" class="required">
-                <label for="confirm">Confirm Password *</label>
-                <input id="confirm" name="confirm" type="text" class="required">
-                <p>(*) Mandatory</p>
-            </section>
-            <h3>Profile</h3>
-            <section>
-                <label for="name">First name *</label>
-                <input id="name" name="name" type="text" class="required">
-                <label for="surname">Last name *</label>
-                <input id="surname" name="surname" type="text" class="required">
-                <label for="email">Email *</label>
-                <input id="email" name="email" type="text" class="required email">
-                <label for="address">Address</label>
-                <input id="address" name="address" type="text">
-                <p>(*) Mandatory</p>
-            </section>
-            <h3>Hints</h3>
-            <section>
-                <ul>
-                    <li>Foo</li>
-                    <li>Bar</li>
-                    <li>Foobar</li>
-                </ul>
-            </section>
-            <h3>Finish</h3>
-            <section>
-                <input id="acceptTerms" name="acceptTerms" type="checkbox" class="required"> <label for="acceptTerms">I agree with the Terms and Conditions.</label>
-            </section>
-        </div>
-    </form>
-    <script type="application/javascript">
+       <!--Call your modal-->
+      <a id="demo01" href="#animatedModal">DEMO01</a>
 
-      var form = $("#example-form");
+      <!--DEMO01-->
+      <div id="animatedModal">
+          <!--THIS IS IMPORTANT! to close the modal, the class name has to match the name given on the ID  class="close-animatedModal" -->
+          <div class="close-animatedModal">
+              CLOSE MODAL
+          </div>
 
-//      form.children("div").steps({
-//        headerTag: "h3",
-//        bodyTag: "section",
-//        transitionEffect: "slideLeft",
-//        onStepChanging: function (event, currentIndex, newIndex) {
-//          form.validate().settings.ignore = ":disabled,:hidden";
-//          return form.valid();
-//        },
-//        onFinishing: function (event, currentIndex) {
-//          form.validate().settings.ignore = ":disabled";
-//          return form.valid();
-//        },
-//        onFinished: function (event, currentIndex) {
-//          alert("Submitted!");
-//        }
-//      });
-
-      $("#example-form").steps({
-        bodyTag: "fieldset",
-        onStepChanging: function (event, currentIndex, newIndex)
-        {
-            // Always allow going backward even if the current step contains invalid fields!
-            if (currentIndex > newIndex)
-            {
-                return true;
-            }
-
-            // Forbid suppressing "Warning" step if the user is too young
-            if (newIndex === 3 && Number($("#age").val()) < 18)
-            {
-                return false;
-            }
-
-            var form = $(this);
-
-            // Clean up if user went backward before
-            if (currentIndex < newIndex)
-            {
-                // To remove error styles
-                $(".body:eq(" + newIndex + ") label.error", form).remove();
-                $(".body:eq(" + newIndex + ") .error", form).removeClass("error");
-            }
-
-            // Disable validation on fields that are disabled or hidden.
-            form.validate().settings.ignore = ":disabled,:hidden";
-
-            // Start validation; Prevent going forward if false
-            return form.valid();
-        },
-        onStepChanged: function (event, currentIndex, priorIndex)
-        {
-            // Suppress (skip) "Warning" step if the user is old enough and wants to the previous step.
-            if (currentIndex === 2 && priorIndex === 3)
-            {
-                $(this).steps("previous");
-                return;
-            }
-
-            // Suppress (skip) "Warning" step if the user is old enough.
-            if (currentIndex === 2 && Number($("#age").val()) >= 18)
-            {
-                $(this).steps("next");
-            }
-        },
-        onFinishing: function (event, currentIndex)
-        {
-            var form = $(this);
-
-            // Disable validation on fields that are disabled.
-            // At this point it's recommended to do an overall check (mean ignoring only disabled fields)
-            form.validate().settings.ignore = ":disabled";
-
-            // Start validation; Prevent form submission if false
-            return form.valid();
-        },
-        onFinished: function (event, currentIndex)
-        {
-            var form = $(this);
-
-            // Submit form input
-            form.submit();
-            alert("Submitted!");
-        }
-    });
-//      .validate({
-//        errorPlacement: function (error, element)
-//        {
-//            element.before(error);
-//        },
-//        rules: {
-//            confirm: {
-//                equalTo: "#password"
-//            }
-//        }
-//    });
-
-    </script>
-    <!--MODAL CHECKOUT FORM-->
-  </body>
+          <div class="modal-content">
+                    <!--Your modal content goes here-->
+          </div>
+      </div>
+      <script type="application/javascript">
+        $("#demo01").animatedModal();
+      </script>
+    </body>
 </html>
