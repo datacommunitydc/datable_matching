@@ -8,6 +8,7 @@
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script src="./js/jquery-1.11.1.min.js"></script>
     <script src="./js/d3.3.5.5.min.js"></script>
+    <script src="./js/jquery.steps.min.js"></script>
     
     <script type="text/javascript" src="./keshif.js" charset="utf-8"></script>
     <link rel="stylesheet" href="./keshif.css" type="text/css">
@@ -16,6 +17,11 @@
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600" rel="stylesheet">
 
     <script type="text/javascript">
+      function getContinueShoppingURL(form){
+
+        // -- Get the href of the currently displayed webpage --
+        form.shopping_url.value = window.location.href;
+      }
 var browser;
 
 google.setOnLoadCallback(function(){
@@ -112,28 +118,48 @@ google.setOnLoadCallback(function(){
         var major = this["Describe yourself in one sentence."];
         if(major===null) major = "-";
         var minor = this["Please describe three data science or data related projects you've worked on in the last three years. These can be features of larger projects, consulting projects, classified work described generally, or open source contributions."];
-        return '<form class="PayPalBuyButton"  target="paypal" action="https://www.paypal.com/cgi-bin/webscr" method="post">' +
-              '<input type="hidden" name="cmd" value="_s-xclick">' +
-              '<input type="hidden" name="upload" value="1">' +
-              '<input type="hidden" name="hosted_button_id" value="6NKAMDC6VZ2AQ">' +
-//              '<input type="hidden" add="1">' +
-              '<INPUT TYPE="hidden" name="charset" value="utf-8">' +
-              '<input type="hidden" name="item_name_'+this.id+'" value="CandidateIntro_'+this.id+'">' +
-              '<input type="hidden" name="amount_'+this.id+'" value="35">' +
-              '<input type="hidden" name="shipping_'+this.id+'" value="0">' +
-              '<input type="hidden" name="handling_'+this.id+'" value="0">' +
-              '<input type="hidden" name="tax" value="0">' +
-              '<input type="hidden" name="currency_code" value="USD">'+
-              '<input type="hidden" name="business" value="seang@datacommunitydc.org">'+
-              '<input class="PayPalSubmit" type="submit" value="Get Introduced!" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">' +
-            '</form>'  +
+        return '<form class="PayPalBuyButton"  target="paypal" action="https://www.paypal.com/cgi-bin/webscr" method="post">'+
+    '  <input type="hidden" name="cmd" value="_cart">'+
+    '  <input type="hidden" name="cbt" value="Welcome to Datable">'+
+    '  <input type="hidden" name="image_url" value="https://drive.google.com/file/d/0BxSU0Aiu9Sx5OHVNV0J0alRseW8">'+
+    '  <input type="hidden" name="add" value="1">'+
+    '  <!--<input type="hidden" name="custom" value="what it is!">-->'+
+    '  <input type="hidden" name="shopping_url" value="match.datacommunitydc.org">'+
+    '  <input type="hidden" name="no_shipping" value="1">'+
+    '  <input type="hidden" name="no_note" value="0">'+
+    '  <INPUT TYPE="hidden" name="charset" value="utf-8">'+
+    '  <input type="hidden" name="item_name" value="Candidate '+this.id+'">'+
+    '  <input type="hidden" name="item_number" value="'+this.id+'">'+
+    '  <input type="hidden" name="invoice" value="User statment here">'+
+    '  <input type="hidden" name="amount" value="35">'+
+    '  <input type="hidden" name="currency_code" value="USD">'+
+    '  <input type="hidden" name="business" value="andrew@datacommunitydc.org">'+
+    '  <input class="PayPalSubmit" type="submit" onclick=getContinueShoppingURL(this.form) value="Please introduce Candidate '+this.id+'" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">'+
+    '</form>'+
+//        return '<form class="PayPalBuyButton"  target="paypal" action="https://www.paypal.com/cgi-bin/webscr" method="post">' +
+//              '<input type="hidden" name="cmd" value="_cart">' +
+//              '<input type="hidden" name="upload" value="1">' +
+//              '<INPUT TYPE="hidden" name="charset" value="utf-8">' +
+//              '<input type="hidden" name="item_name_'+this.id+'" value="1">' +
+//              '<input type="hidden" name="amount_'+this.id+'" value="35">' +
+//              '<input type="hidden" name="currency_code" value="USD">'+
+//              '<input type="hidden" name="business" value="seang@datacommunitydc.org">'+
+//              '<input class="PayPalSubmit" type="submit" value="Get Introduced!" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">' +
+//            '</form>'  +
+//        return '<form target="paypal" action="https://www.paypal.com/cgi-bin/webscr" method="post">'+
+//               ' <input type="hidden" name="cmd" value="_s-xclick">'+
+//               ' <input type="hidden" name="hosted_button_id" value="6NKAMDC6VZ2AQ">'+
+//               ' <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_cart_SM.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">'+
+//               ' <img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">'+
+//            '</form>' +
 
-           // <form target="paypal" action="https://www.paypal.com/cgi-bin/webscr" method="post">
-           //     <input type="hidden" name="cmd" value="_s-xclick">
-           //     <input type="hidden" name="hosted_button_id" value="6NKAMDC6VZ2AQ">
-           //     <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_cart_SM.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
-           //     <img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
-           // </form>
+//        return '<form target="paypal" action="https://www.paypal.com/cgi-bin/webscr" method="post">'+
+//              '<input type="hidden" name="cmd" value="_s-xclick">'+
+//              '<input type="hidden" name="hosted_button_id" value="MY6KVVK33SE2Y">'+
+//              '<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_cart_SM.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">'+
+//              '<img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">'+
+//            '</form>'+
+
 
 
           // major description
@@ -397,50 +423,209 @@ body{
 .kshf .header_listSortColumn{ display: none !important; }
 </style>
 
-  <body>
-    <div class="container">
-      <div class="row">
-        <div class="nine columns">
-          <a href='http://www.datacommunitydc.org' target='_blank'><img id="DC2logo" src="./images/DC2_logo_wide_600wide.png"/></a>
-          <img class='_logo' style='margin-left: 1em' src="./images/GI-helix-large.png"/>
-          <a href='http://www.keshif.me' target='_blank' title="Keshif: Data Made Explorable" id="kshfLogo"
-            style='height: 3em; display: inline-block; width: 3em;'></a>
-        </div>
+    <body>
+      <div class="container">
+        <div class="row">
+          <div class="nine columns">
+            <a href='http://www.datacommunitydc.org' target='_blank'><img id="DC2logo" src="./images/DC2_logo_wide_600wide.png"/></a>
+            <img class='_logo' style='margin-left: 1em' src="./images/GI-helix-large.png"/>
+            <a href='http://www.keshif.me' target='_blank' title="Keshif: Data Made Explorable" id="kshfLogo"
+              style='height: 3em; display: inline-block; width: 3em;'></a>
+          </div>
 
-        <div class="three columns">
-          <h3 title="Feedback welcome via Helprace on the LHS" style="margin: 0;text-align: right;font-family:AgencyFB">BETA</h3>
+          <div class="three columns">
+            <h3 title="Feedback welcome via Helprace on the LHS" style="margin: 0;text-align: right;font-family:AgencyFB">BETA</h3>
+          </div>
         </div>
-      </div>
-      <div class="row" style="margin-bottom: 15px;">
-        <div class="nine columns">
-          <div class="purchaseNote"><u>Note</u>: Each introduction to a candidate of your choice costs $35.<br>
-            You will be directed to PayPal to complete the transaction. For questions, contact TODO.</div>
+        <div class="row" style="margin-bottom: 15px;">
+          <div class="nine columns">
+            <div>
+              <form target="paypal" action="https://www.paypal.com/cgi-bin/webscr" method="post">
+                <!-- Identify your business so that you can collect the payments. -->
+                <input type="hidden" name="business" value="andrew@datacommunitydc.org">
 
+                <!-- Specify a PayPal Shopping Cart View Cart button. -->
+                <input type="hidden" name="cmd" value="_cart">
+                <input type="hidden" name="display" value="1">
+
+                <!-- Display the View Cart button. -->
+                <input type="image" name="submit"
+                    src="https://www.paypalobjects.com/en_US/i/btn/btn_viewcart_LG.gif"
+                   alt="PayPal - The safer, easier way to pay online">
+                <img alt="" width="1" height="1"
+                    src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif">
+              </form>
+            </div>
+            <div class="purchaseNote"><u>Note</u>: Each introduction to a candidate of your choice costs $35.<br>
+              You will be directed to PayPal to complete the transaction. For questions, contact TODO.</div>
+
+          </div>
+          <div class="three columns">
+            <a class="button" style="margin: 0;position: absolute;right:0px" target="_blank" href="https://youtu.be/3Hmvms-1grU">Tutorial</a>
+            <!-- <a class="button" target="_blank" href="https://docs.google.com/spreadsheets/d/1hSAnjE6eRH-fvL4A6s1CSurIP-e2wcwLDF14AFvAeu0/edit#gid=864063755">See The Raw List</a> -->
+          </div>
         </div>
-        <div class="three columns">
-          <a class="button" style="margin: 0;position: absolute;right:0px" target="_blank" href="https://youtu.be/3Hmvms-1grU">Tutorial</a>
-          <!-- <a class="button" target="_blank" href="https://docs.google.com/spreadsheets/d/1hSAnjE6eRH-fvL4A6s1CSurIP-e2wcwLDF14AFvAeu0/edit#gid=864063755">See The Raw List</a> -->
+        <div class="row">
+          <div class="twelve columns"><div id="datable_demo"></div>
+          </div>
+          </div>
+        </div>
         </div>
       </div>
-      <div class="row">
-        <div class="twelve columns"><div id="datable_demo"></div>
+      <script src="//d1culzimi74ed4.cloudfront.net/js/feedback/feedback.js"></script>
+      <script>
+        ChdFeedbackWidget.init({
+          url: "//gi.helprace.com/chd-widgets/feedback",
+          assetsUrl: "//d1culzimi74ed4.cloudfront.net/",
+          feedbackType: "tab",
+          tabTitle: "Feedback & Support",
+          tabPosition: "left",
+          tabBgColor: "#33C3F0",
+          tabTextColor: "#ffffff",
+          tabAction: "false"
+        });
+      </script>
+
+      <!--MODAL CHECKOUT FORM-->
+      <form id="example-form" action="#">
+        <div>
+            <h3>Account</h3>
+            <section>
+                <label for="userName">User name *</label>
+                <input id="userName" name="userName" type="text" class="required">
+                <label for="password">Password *</label>
+                <input id="password" name="password" type="text" class="required">
+                <label for="confirm">Confirm Password *</label>
+                <input id="confirm" name="confirm" type="text" class="required">
+                <p>(*) Mandatory</p>
+            </section>
+            <h3>Profile</h3>
+            <section>
+                <label for="name">First name *</label>
+                <input id="name" name="name" type="text" class="required">
+                <label for="surname">Last name *</label>
+                <input id="surname" name="surname" type="text" class="required">
+                <label for="email">Email *</label>
+                <input id="email" name="email" type="text" class="required email">
+                <label for="address">Address</label>
+                <input id="address" name="address" type="text">
+                <p>(*) Mandatory</p>
+            </section>
+            <h3>Hints</h3>
+            <section>
+                <ul>
+                    <li>Foo</li>
+                    <li>Bar</li>
+                    <li>Foobar</li>
+                </ul>
+            </section>
+            <h3>Finish</h3>
+            <section>
+                <input id="acceptTerms" name="acceptTerms" type="checkbox" class="required"> <label for="acceptTerms">I agree with the Terms and Conditions.</label>
+            </section>
         </div>
-        </div>
-      </div>
-      </div>
-    </div>
-    <script src="//d1culzimi74ed4.cloudfront.net/js/feedback/feedback.js"></script>
-    <script>
-      ChdFeedbackWidget.init({
-        url: "//gi.helprace.com/chd-widgets/feedback",
-        assetsUrl: "//d1culzimi74ed4.cloudfront.net/",
-        feedbackType: "tab",
-        tabTitle: "Feedback & Support",
-        tabPosition: "left",
-        tabBgColor: "#33C3F0",
-        tabTextColor: "#ffffff",
-        tabAction: "false"
-      });
+    </form>
+    <script type="application/javascript">
+
+      var form = $("#example-form");
+
+//      form.children("div").steps({
+//        headerTag: "h3",
+//        bodyTag: "section",
+//        transitionEffect: "slideLeft",
+//        onStepChanging: function (event, currentIndex, newIndex) {
+//          form.validate().settings.ignore = ":disabled,:hidden";
+//          return form.valid();
+//        },
+//        onFinishing: function (event, currentIndex) {
+//          form.validate().settings.ignore = ":disabled";
+//          return form.valid();
+//        },
+//        onFinished: function (event, currentIndex) {
+//          alert("Submitted!");
+//        }
+//      });
+
+      $("#example-form").steps({
+        bodyTag: "fieldset",
+        onStepChanging: function (event, currentIndex, newIndex)
+        {
+            // Always allow going backward even if the current step contains invalid fields!
+            if (currentIndex > newIndex)
+            {
+                return true;
+            }
+
+            // Forbid suppressing "Warning" step if the user is too young
+            if (newIndex === 3 && Number($("#age").val()) < 18)
+            {
+                return false;
+            }
+
+            var form = $(this);
+
+            // Clean up if user went backward before
+            if (currentIndex < newIndex)
+            {
+                // To remove error styles
+                $(".body:eq(" + newIndex + ") label.error", form).remove();
+                $(".body:eq(" + newIndex + ") .error", form).removeClass("error");
+            }
+
+            // Disable validation on fields that are disabled or hidden.
+            form.validate().settings.ignore = ":disabled,:hidden";
+
+            // Start validation; Prevent going forward if false
+            return form.valid();
+        },
+        onStepChanged: function (event, currentIndex, priorIndex)
+        {
+            // Suppress (skip) "Warning" step if the user is old enough and wants to the previous step.
+            if (currentIndex === 2 && priorIndex === 3)
+            {
+                $(this).steps("previous");
+                return;
+            }
+
+            // Suppress (skip) "Warning" step if the user is old enough.
+            if (currentIndex === 2 && Number($("#age").val()) >= 18)
+            {
+                $(this).steps("next");
+            }
+        },
+        onFinishing: function (event, currentIndex)
+        {
+            var form = $(this);
+
+            // Disable validation on fields that are disabled.
+            // At this point it's recommended to do an overall check (mean ignoring only disabled fields)
+            form.validate().settings.ignore = ":disabled";
+
+            // Start validation; Prevent form submission if false
+            return form.valid();
+        },
+        onFinished: function (event, currentIndex)
+        {
+            var form = $(this);
+
+            // Submit form input
+            form.submit();
+            alert("Submitted!");
+        }
+    });
+//      .validate({
+//        errorPlacement: function (error, element)
+//        {
+//            element.before(error);
+//        },
+//        rules: {
+//            confirm: {
+//                equalTo: "#password"
+//            }
+//        }
+//    });
+
     </script>
+    <!--MODAL CHECKOUT FORM-->
   </body>
 </html>
