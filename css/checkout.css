@@ -1,0 +1,32 @@
+
+.remodal-bg.with-red-theme.remodal-is-opening,
+.remodal-bg.with-red-theme.remodal-is-opened {
+    filter: none;
+}
+.remodal-overlay.with-red-theme {
+    background-color: #f44336;
+}
+.remodal.with-red-theme {
+    background: #fff;
+}
+
+.data2 input[type=text] {
+    width: 80%;
+    padding: 12px 20px;
+    margin: 2px 0;
+    box-sizing: border-box;
+    border-radius: 4px;
+}
+.data2 input[type=email] {
+    width: 80%;
+    padding: 12px 20px;
+    margin: 2px 0;
+    box-sizing: border-box;
+    border-radius: 4px;
+}
+
+.data2 input[type=checkbox] {
+    height: 2em;
+    width: 2em;
+    margin: 0;
+}

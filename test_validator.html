@@ -1,0 +1,112 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="./js/remodal.min.js"></script>
+    <link rel="stylesheet" href="./css/custom-keshif.css">
+    <link rel="stylesheet" href="./css/remodal.css">
+    <link rel="stylesheet" href="./css/remodal-default-theme.css">
+  </head>
+  <body>
+    <div class="container">
+      <a class="button button-primary" href="#modal">Modal</a>
+    </div>
+    <div class="remodal" data-remodal-id="modal" role="dialog" aria-labelledby="modalTitle" aria-describedby="modalDesc">
+      <div><h2 modalTitle>Title</h2></div>
+      <form id="ToSform" data-toggle="validator" role="form">
+        <div class="row">
+          <div class="offset-by-three three columns">
+            <div class="form-group">
+              <label for="inputName" class="control-label">Name</label>
+              <input type="text" class="form-control" id="inputName" placeholder="Cina Saffary" required>
+            </div>
+          </div>
+
+          <div class="three columns">
+            <div class="form-group has-feedback">
+              <label for="inputTwitter" class="control-label">Twitter</label>
+              <div class="input-group">
+                <span class="input-group-addon">@</span>
+                <input type="text" pattern="^[_A-z0-9]{1,}$" maxlength="15" class="form-control" id="inputTwitter" placeholder="1000hz" required>
+              </div>
+              <span class="glyphicon form-control-feedback" aria-hidden="true"></span>
+              <div class="help-block with-errors">Hey look, this one has feedback icons!</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="inputEmail" class="control-label">Email</label>
+          <input type="email" class="form-control" id="inputEmail" placeholder="Email" data-error="Bruh, that email address is invalid" required>
+          <div class="help-block with-errors"></div>
+        </div>
+        <div class="form-group">
+          <label for="inputPassword" class="control-label">Password</label>
+          <div class="form-inline row">
+            <div class="form-group col-sm-6">
+              <input type="password" data-minlength="6" class="form-control" id="inputPassword" placeholder="Password" required>
+              <div class="help-block">Minimum of 6 characters</div>
+            </div>
+            <div class="form-group col-sm-6">
+              <input type="password" class="form-control" id="inputPasswordConfirm" data-match="#inputPassword" data-match-error="Whoops, these don't match" placeholder="Confirm" required>
+              <div class="help-block with-errors"></div>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="radio">
+            <label>
+              <input type="radio" name="underwear" required>
+              Boxers
+            </label>
+          </div>
+          <div class="radio">
+            <label>
+              <input type="radio" name="underwear" required>
+              Briefs
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" id="terms" data-error="Before you wreck yourself" required>
+              Check yourself
+            </label>
+            <div class="help-block with-errors"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <button type="submit" class="btn btn-primary">Submit</button>
+          <button target="_blank" onclick=Sean() class="btn btn-primary">Submit</button>
+          <!--<a target="_blank" onclick=Sean()>Submit</a>-->
+        </div>
+      </form>
+    </div>
+
+    <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/1000hz-bootstrap-validator/0.11.5/validator.min.js"></script>-->
+    <script src="./js/checkout.js"></script>
+    <script type="application/javascript">
+
+    </script>
+    <script type="application/javascript">
+
+      var Sean = function() {
+        var name = $("#inputName").value;
+        if (name.length<8) {
+          alert("your name sucks")
+        } else {
+          document.location.href = "http://www.playboy.com"
+        }
+      }
+
+//      $("#ToSform").validator().on('submit', function (e) {
+//        if (e.isDefaultPrevented()) {
+//          alert("bad kitteh!")
+//        } else {
+//          alert("good kitteh :)")
+//        }
+//      });
+    </script>
+  </body>
+</html>

@@ -5,588 +5,34 @@
 
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!--Remodal-->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="./js/remodal.min.js"></script>
+    <!--Remodal-->
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
-    <script src="./js/jquery-1.11.1.min.js"></script>
+    <!--<script src="./js/jquery-1.11.1.min.js"></script>-->
+    <!--<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>-->
     <script src="./js/d3.3.5.5.min.js"></script>
-    <script type="text/javascript" src="./keshif.js" charset="utf-8"></script>
-    <link rel="stylesheet" href="./keshif.css" type="text/css">
+
+    <script type="text/javascript" src="js/keshif.js" charset="utf-8"></script>
+    <link rel="stylesheet" href="css/keshif.css" type="text/css">
+    <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" type="text/css">-->
+
+    <!--Remodal-->
+    <link rel="stylesheet" href="./css/checkout.css">
+    <link rel="stylesheet" href="./css/remodal.css">
+    <link rel="stylesheet" href="./css/remodal-default-theme.css">
+    <!--Remodal-->
+    <!--Custom Keshif-->
+    <link rel="stylesheet" href="./css/custom-keshif.css">
+    <!--Custom Keshif-->
     <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600" rel="stylesheet">
 
-    <script type="text/javascript">
-var browser;
-
-function refreshSelectedList(){
-  var str="";
-  browser.records.forEach(function(candidate){
-    if(candidate.customSelect){
-      str='<span class="selectBox">'+candidate.id()+"</span>"+str;
-    }
-  });
-  $("#SelectedContainer").html(str);
-};
-
-google.setOnLoadCallback(function(){
-  browser = new kshf.Browser({
-    domID: "#datable_demo", // This is the DOM id, might be different for your page.
-    itemName: "Datable Candidates",
-    barChartWidth: 100,
-    leftPanelLabelWidth: 230,
-    middlePanelLabelWidth: 230,
-    source: {
-      gdocId: '1O0zxuuLB_wRRAbf80O7WkKFl0ie-P4prhmJDSjNdtUk',
-      tables: "Candidate_Pool"
-    },
-    summaries: [
-      // { name: "When was the last time you committed code?" },
-      { name: "Experience Level", 
-        value: "What's your experience level?",
-        catSortBy: [
-          "Veteran (10+ years)",
-          "Senior (5+ years)",
-          "Mid-Level (3-5 years)",
-          "Junior (1-3 years)",
-          "Entry Level (0 years)"
-        ]
-        },
-      { name: "Degrees earned", value: 'What Degrees have you earned?', catSplit: ", " },
-      { name: "Data Science Techniques", value: "What Data Science techniques have you worked with?", catSplit: ", " },
-      { name: "Languages and Libraries", value: "What languages & libraries do you use?", catSplit: ", " },
-      { name: "Community and Engagement",
-        description: "My description",
-        value: function(){
-          var r=[];
-          if(this["Have you managed teams before?"]==="Yes")
-              r.push("Managed teams before");
-          if(this["Have you ever presented your work at an event?"]==="Yes")
-              r.push("Presented at an event");
-          if(this["Startup and/or Business Experience?"]==="Yes")
-              r.push("Startup and/or Business Experience");
-          if(this["Have you accepted or would you accept freelance work?"]==="Yes")
-              r.push("Accepted/ would accept freelance work");
-          if(this["Are you a US Citizen?"]==="Yes")
-              r.push("US Citizen");
-          if(this["Are you a community organizer?"]==="Yes")
-              r.push("Community Organizer");
-          if(this["Have you ever founded a startup, or joined a startup in the early stages, that achieved market traction or better?"]==="Yes")
-              r.push("Found/Jound an early-stage startup");
-          if(this["Have you ever been involved with BD, sales, or managed a client relationship?"]==="Yes")
-              r.push("BD/ sales / management in client relationships");
-          if(this["Do you volunteer for others' community events?"]==="Yes")
-              r.push("Volunteered at community events");
-          if(this["Have you provided successful introductions to another community organizer?"]==="Yes")
-              r.push("Provided introductions to another community organizer");
-          if(this[""]==="Yes") r.push("");
-          return r;
-        } },
-      { name: "Security Clearance", value: 'Do you have a Security Clearance?', collapsed: true, panel: 'middle' },
-
-      { name: "Experience in Sectors", value: 'What sectors have you worked in?', collapsed: true, catSplit: ", " },
-
-      { name: "When was the last time you committed code?", panel: "middle", collapsed: true },
-
-      { name: "Data Community DC Events Attended", catSplit: ", ", panel: 'middle', collapsed: true },
-    ],
-    recordDisplay: {
-      sortColWidth: 45,
-      textSearch: "Describe yourself in one sentence.",
-      recordView: function(){
-        var major = this["Describe yourself in one sentence."];
-        if(major===null) major = "-";
-        var minor = this["Please describe three data science or data related projects you've worked on in the last three years. These can be features of larger projects, consulting projects, classified work described generally, or open source contributions."];
-        return "<span class='selectBox'>Select</span>"+
-
-          "<div class='descr_major'>" + major + "</div>"+
-          ((minor!==null)?("<div class='descr_minor'> <span style='font-weight:400'>Experience</span>: "+minor+"</div>"):"")
-          ;
-      },
-      onDOM: function(d){
-        d3.select(d.DOM.record).select(".selectBox").on("click",
-          function(){
-            if(d.customSelect) d.customSelect = false;
-            else d.customSelect = true;
-            this.textContent = d.customSelect?"":"Select";
-            d3.select(this).classed("customSelect",d.customSelect);
-            refreshSelectedList();
-            //window.open("www.datacommunitydc.org/sponsorship/candidate-pool-introduction");
-          });
-      }
-    }
-  });
-  $("#kshfLogo").html(kshf.kshfLogo);
-});
-    </script>
+    <script type="text/javascript" src="./js/custom-keshif.js"></script>
   </head>
 
-<style>
-
-/*
-* Skeleton V2.0.4
-* Copyright 2014, Dave Gamache
-* www.getskeleton.com
-* Free to use under the MIT license.
-* http://www.opensource.org/licenses/mit-license.php
-* 12/29/2014
-*/
-
-/* Grid
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-.container {
-  position: relative;
-  width: 100%;
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 0 20px;
-  box-sizing: border-box; }
-.column,
-.columns {
-  width: 100%;
-  float: left;
-  box-sizing: border-box; }
-
-/* For devices larger than 400px */
-@media (min-width: 400px) {
-  .container {
-    width: 85%;
-    padding: 0; }
-}
-
-/* For devices larger than 550px */
-@media (min-width: 550px) {
-  .container {
-    width: 80%; }
-  .column,
-  .columns {
-    margin-left: 4%; }
-  .column:first-child,
-  .columns:first-child {
-    margin-left: 0; }
-
-  .one.column,
-  .one.columns                    { width: 4.66666666667%; }
-  .two.columns                    { width: 13.3333333333%; }
-  .three.columns                  { width: 22%;            }
-  .four.columns                   { width: 30.6666666667%; }
-  .five.columns                   { width: 39.3333333333%; }
-  .six.columns                    { width: 48%;            }
-  .seven.columns                  { width: 56.6666666667%; }
-  .eight.columns                  { width: 65.3333333333%; }
-  .nine.columns                   { width: 74.0%;          }
-  .ten.columns                    { width: 82.6666666667%; }
-  .eleven.columns                 { width: 91.3333333333%; }
-  .twelve.columns                 { width: 100%; margin-left: 0; }
-
-  .one-third.column               { width: 30.6666666667%; }
-  .two-thirds.column              { width: 65.3333333333%; }
-
-  .one-half.column                { width: 48%; }
-
-  /* Offsets */
-  .offset-by-one.column,
-  .offset-by-one.columns          { margin-left: 8.66666666667%; }
-  .offset-by-two.column,
-  .offset-by-two.columns          { margin-left: 17.3333333333%; }
-  .offset-by-three.column,
-  .offset-by-three.columns        { margin-left: 26%;            }
-  .offset-by-four.column,
-  .offset-by-four.columns         { margin-left: 34.6666666667%; }
-  .offset-by-five.column,
-  .offset-by-five.columns         { margin-left: 43.3333333333%; }
-  .offset-by-six.column,
-  .offset-by-six.columns          { margin-left: 52%;            }
-  .offset-by-seven.column,
-  .offset-by-seven.columns        { margin-left: 60.6666666667%; }
-  .offset-by-eight.column,
-  .offset-by-eight.columns        { margin-left: 69.3333333333%; }
-  .offset-by-nine.column,
-  .offset-by-nine.columns         { margin-left: 78.0%;          }
-  .offset-by-ten.column,
-  .offset-by-ten.columns          { margin-left: 86.6666666667%; }
-  .offset-by-eleven.column,
-  .offset-by-eleven.columns       { margin-left: 95.3333333333%; }
-
-  .offset-by-one-third.column,
-  .offset-by-one-third.columns    { margin-left: 34.6666666667%; }
-  .offset-by-two-thirds.column,
-  .offset-by-two-thirds.columns   { margin-left: 69.3333333333%; }
-
-  .offset-by-one-half.column,
-  .offset-by-one-half.columns     { margin-left: 52%; }
-
-}
-
-
-/* Base Styles
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-/* NOTE
-html is set to 62.5% so that all the REM measurements throughout Skeleton
-are based on 10px sizing. So basically 1.5rem = 15px :) */
-body {
-  font-weight: 400;
-  font-family: "Raleway", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  color: #222; }
-
-
-/* Typography
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-h1, h2, h3, h4, h5, h6 {
-  margin-top: 0;
-  margin-bottom: 2rem;
-  font-weight: 300; }
-h1 { font-size: 4.0rem; line-height: 1.2;  letter-spacing: -.1rem;}
-h2 { font-size: 3.6rem; line-height: 1.25; letter-spacing: -.1rem; }
-h3 { font-size: 3.0rem; line-height: 1.3;  letter-spacing: -.1rem; }
-h4 { font-size: 2.4rem; line-height: 1.35; letter-spacing: -.08rem; }
-h5 { font-size: 1.8rem; line-height: 1.5;  letter-spacing: -.05rem; }
-h6 { font-size: 1.5rem; line-height: 1.6;  letter-spacing: 0; }
-
-/* Larger than phablet */
-@media (min-width: 550px) {
-  h1 { font-size: 5.0rem; }
-  h2 { font-size: 4.2rem; }
-  h3 { font-size: 3.6rem; }
-  h4 { font-size: 3.0rem; }
-  h5 { font-size: 2.4rem; }
-  h6 { font-size: 1.5rem; }
-}
-
-p {
-  margin-top: 0; }
-
-
-/* Links
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-a {
-  color: #1EAEDB; }
-a:hover {
-  color: #0FA0CE; }
-
-
-/* Buttons
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-.button,
-button,
-input[type="submit"],
-input[type="reset"],
-input[type="button"] {
-  display: inline-block;
-  height: 38px;
-  padding: 0 30px;
-  color: #555;
-  text-align: center;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 38px;
-  letter-spacing: .1rem;
-  text-transform: uppercase;
-  text-decoration: none;
-  white-space: nowrap;
-  background-color: transparent;
-  border-radius: 4px;
-  border: 1px solid #bbb;
-  cursor: pointer;
-  box-sizing: border-box; }
-.button:hover,
-button:hover,
-input[type="submit"]:hover,
-input[type="reset"]:hover,
-input[type="button"]:hover,
-.button:focus,
-button:focus,
-input[type="submit"]:focus,
-input[type="reset"]:focus,
-input[type="button"]:focus {
-  color: #333;
-  border-color: #888;
-  outline: 0; }
-.button.button-primary,
-button.button-primary,
-input[type="submit"].button-primary,
-input[type="reset"].button-primary,
-input[type="button"].button-primary {
-  color: #FFF;
-  background-color: #33C3F0;
-  border-color: #33C3F0; }
-.button.button-primary:hover,
-button.button-primary:hover,
-input[type="submit"].button-primary:hover,
-input[type="reset"].button-primary:hover,
-input[type="button"].button-primary:hover,
-.button.button-primary:focus,
-button.button-primary:focus,
-input[type="submit"].button-primary:focus,
-input[type="reset"].button-primary:focus,
-input[type="button"].button-primary:focus {
-  color: #FFF;
-  background-color: #1EAEDB;
-  border-color: #1EAEDB; }
-
-
-/* Forms
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-input[type="email"],
-input[type="number"],
-input[type="search"],
-input[type="tel"],
-input[type="url"],
-input[type="password"],
-textarea{
-  height: 38px;
-  padding: 6px 10px; /* The 6px vertically centers text on FF, ignored by Webkit */
-  background-color: #fff;
-  border: 1px solid #D1D1D1;
-  border-radius: 4px;
-  box-shadow: none;
-  box-sizing: border-box; }
-/* Removes awkward default styles on some inputs for iOS */
-input[type="email"],
-input[type="number"],
-input[type="search"],
-input[type="tel"],
-input[type="url"],
-input[type="password"],
-textarea {
-  -webkit-appearance: none;
-     -moz-appearance: none;
-          appearance: none; }
-textarea {
-  min-height: 65px;
-  padding-top: 6px;
-  padding-bottom: 6px; }
-input[type="email"]:focus,
-input[type="number"]:focus,
-input[type="search"]:focus,
-input[type="tel"]:focus,
-input[type="url"]:focus,
-input[type="password"]:focus,
-textarea:focus{
-  border: 1px solid #33C3F0;
-  outline: 0; }
-label,
-legend {
-  display: block;
-  margin-bottom: .5rem;
-  font-weight: 600; }
-fieldset {
-  padding: 0;
-  border-width: 0; }
-input[type="checkbox"],
-input[type="radio"] {
-  display: inline; }
-label > .label-body {
-  display: inline-block;
-  margin-left: .5rem;
-  font-weight: normal; }
-
-
-/* Lists
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-ul {
-  list-style: circle inside; }
-ol {
-  list-style: decimal inside; }
-ol, ul {
-  padding-left: 0;
-  margin-top: 0; }
-ul ul,
-ul ol,
-ol ol,
-ol ul {
-  margin: 1.5rem 0 1.5rem 3rem;
-  font-size: 90%; }
-li {
-  margin-bottom: 1rem; }
-
-
-/* Code
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-code {
-  padding: .2rem .5rem;
-  margin: 0 .2rem;
-  font-size: 90%;
-  white-space: nowrap;
-  background: #F1F1F1;
-  border: 1px solid #E1E1E1;
-  border-radius: 4px; }
-pre > code {
-  display: block;
-  padding: 1rem 1.5rem;
-  white-space: pre; }
-
-
-/* Tables
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-th,
-td {
-  padding: 12px 15px;
-  text-align: left;
-  border-bottom: 1px solid #E1E1E1; }
-th:first-child,
-td:first-child {
-  padding-left: 0; }
-th:last-child,
-td:last-child {
-  padding-right: 0; }
-
-
-/* Spacing
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-button,
-.button {
-  margin-bottom: 1rem; }
-textarea,
-fieldset {
-  margin-bottom: 1.5rem; }
-pre,
-blockquote,
-dl,
-figure,
-table,
-p,
-ul,
-ol,
-form {
-  margin-bottom: 2.5rem; }
-
-
-/* Utilities
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-.u-full-width {
-  width: 100%;
-  box-sizing: border-box; }
-.u-max-full-width {
-  max-width: 100%;
-  box-sizing: border-box; }
-.u-pull-right {
-  float: right; }
-.u-pull-left {
-  float: left; }
-
-
-/* Misc
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-hr {
-  margin-top: 3rem;
-  margin-bottom: 3.5rem;
-  border-width: 0;
-  border-top: 1px solid #E1E1E1; }
-
-
-/* Clearing
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-
-/* Self Clearing Goodness */
-.container:after,
-.row:after,
-.u-cf {
-  content: "";
-  display: table;
-  clear: both; }
-
-
-/* Media Queries
-–––––––––––––––––––––––––––––––––––––––––––––––––– */
-/*
-Note: The best way to structure the use of media queries is to create the queries
-near the relevant code. For example, if you wanted to change the styles for buttons
-on small devices, paste the mobile query code up in the buttons section and style it
-there.
-*/
-
-
-/* Larger than mobile */
-@media (min-width: 400px) {}
-
-/* Larger than phablet (also point when grid becomes active) */
-@media (min-width: 550px) {}
-
-/* Larger than tablet */
-@media (min-width: 750px) {}
-
-/* Larger than desktop */
-@media (min-width: 1000px) {}
-
-/* Larger than Desktop HD */
-@media (min-width: 1200px) {}
-
-img {
-  padding: 0;
-  max-width: 100%;
-  height: auto;
-}
-#DC2logo {
-  padding:0;
-  height: 3em;
-  display: inline-block;
-}
-.center {
-  display: block;
-  text-align: center;
-  margin: 0;
-  margin-top: 10px;
-  width: 80%;
-  padding: 0;
-}
-#logos {
-  margin: 20px;
-}
-#datable_demo{
-  height: 600px;
-  width: 100%;
-}
-.descr_major{
-  padding-bottom: 3px;
-}
-.descr_minor{
-  font-weight: 300;
-  font-size: 0.9em;
-  padding-bottom: 3px;
-}
-.kshf .selectBox{
-  background-color: #33C3F0;
-  color: white;
-  float: right;
-  border-width: 0px;
-}
-.kshf .selectBox.customSelect{
-  background-color: orangered;
-  width: 25px;
-  text-align: center;
-}
-.kshf .selectBox.customSelect:before{
-  content: "✔ ";
-}
-.kshf .selectBox.customSelect:hover:before{
-  content: "✖";
-}
-.selectBox{
-  display: inline-block;
-  font-size: 0.8em;
-  background-color: white;
-  border: solid 1px #33C3F0;
-  color: black;
-  border-radius: 4px;
-  padding: 2px 5px;
-  margin: 2px;
-  font-weight: 300;
-  cursor: pointer;
-}
-.selectBox:hover{
-  text-decoration: underline;
-}
-#SelectedContainer{
-  display: inline-block;
-}
-._logo{
-  height: 3em;
-}
-body{
-  background-color: #EEEEEE;
-}
-.rightBoxes > .fa-question-circle{ display: none !important; }
-.rightBoxes > .showConfigButton{ display: none !important; }
-.rightBoxes > .fullscreen{ display: none !important; }
-.kshf .saveSelection {display: none !important; }
-</style>
 
   <body>
     <div class="container">
@@ -604,12 +50,34 @@ body{
       </div>
       <div class="row" style="margin-bottom: 15px;">
         <div class="nine columns">
-          <a class="button button-primary" target="_blank" href="http://www.datacommunitydc.org/sponsorship/candidate-pool-introduction">Introduce me to these candidates <i class='fa fa-arrow-right'></i><i class='fa fa-arrow-right'></i></a>
-          <div id="SelectedContainer"></div>
+          <div>
+            <!--<a href="#modal">Modal №1</a>-->
+            <a class="button button-primary" href="#modal">
+              Introduce us Please  <i class="fa fa-hand-spock-o" style="font-size:18px" aria-hidden="true"></i>
+              <!--<i class='fa fa-arrow-right'></i>-->
+              <!--<i class='fa fa-arrow-right'></i>-->
+            </a>
+            <div id="SelectedContainer"></div>
+            <!--<form target="paypal" action="https://www.paypal.com/cgi-bin/webscr" method="post">-->
+              <!--&lt;!&ndash; Identify your business so that you can collect the payments. &ndash;&gt;-->
+              <!--<input type="hidden" name="business" value="andrew@datacommunitydc.org">-->
+
+              <!--&lt;!&ndash; Specify a PayPal Shopping Cart View Cart button. &ndash;&gt;-->
+              <!--<input type="hidden" name="cmd" value="_cart">-->
+              <!--<input type="hidden" name="display" value="1">-->
+
+              <!--&lt;!&ndash; Display the View Cart button. &ndash;&gt;-->
+              <!--<input type="image" name="submit"-->
+                  <!--src="https://www.paypalobjects.com/en_US/i/btn/btn_viewcart_LG.gif"-->
+                 <!--alt="PayPal - The safer, easier way to pay online">-->
+              <!--<img alt="" width="1" height="1"-->
+                  <!--src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif">-->
+            <!--</form>-->
+          </div>
         </div>
         <div class="three columns">
           <a class="button" style="margin: 0;position: absolute;right:0px" target="_blank" href="https://youtu.be/3Hmvms-1grU">Tutorial</a>
-          <!--<a class="button" target="_blank" href="https://docs.google.com/spreadsheets/d/1hSAnjE6eRH-fvL4A6s1CSurIP-e2wcwLDF14AFvAeu0/edit#gid=864063755">See The Raw List</a>-->
+          <!-- <a class="button" target="_blank" href="https://docs.google.com/spreadsheets/d/1hSAnjE6eRH-fvL4A6s1CSurIP-e2wcwLDF14AFvAeu0/edit#gid=864063755">See The Raw List</a> -->
         </div>
       </div>
       <div class="row">
@@ -619,6 +87,130 @@ body{
       </div>
       </div>
     </div>
+
+    <!--REMODAL-->
+    <!--STEP #1-->
+    <div class="modal1 remodal" data-remodal-id="modal" role="dialog" aria-labelledby="modal1Title" aria-describedby="modal1Desc">
+      <button data-remodal-action="close" class="remodal-close" aria-label="Close"></button>
+      <div>
+        <h3 id="modal1Title">Step 1: Confirmation</h3>
+        <p id="modal1Desc">
+          <!--Let's get started with your introductions.-->
+          Thank you for taking the time to select the right Candidates for you.
+        </p>
+
+        <p id="step_one_confirm"></p>
+        <p class="candidate_introductions"></p>
+      </div>
+      <br>
+      <button data-remodal-action="cancel" class="modal1 remodal-cancel">✖ Oops</button>
+      <button data-remodal-action="confirm" class="modal1 remodal-confirm" data-remodal-options="closeOnEscape: false">✔ You got it!</button>
+    </div>
+
+    <!--STEP #2-->
+    <div class="modal2 remodal" data-remodal-id="modal2" role="dialog" aria-labelledby="modal2Title" aria-describedby="modal2Desc"
+      data-remodal-options="closeOnOutsideClick: false, closeOnConfirm: false">
+      <button data-remodal-action="close" class="remodal-close" aria-label="Close"></button>
+      <div>
+        <h3 id="modal2Title">Step2: Terms of Service</h3>
+        <h5>$3,500.00 Per Candidate Hired</h5>
+        <p id="ToS">Please review the Datable <a target="_blank" href="https://docs.google.com/document/d/1MaOjibhHjicm5nEvWPLFcgx0w_g2zlFki0lS6FtIDTY/edit?usp=sharing">Terms of Service</a></p>
+        <p>If you have any questions, please email us at <a target="_blank" href="mailto:Datable@DataCommunityDC.org">Datable@DataCommunityDC.org</a></p>
+        <!--<p id="modal2Desc">-->
+          <!--Please check the box if you agree to our Terms of Service.-->
+        <!--</p>-->
+
+        <!--<form id="ToSform" data-toggle="validator" class="data2" role="form">-->
+          <!--<div class="form-group row">-->
+            <!--<div class="offset-by-two four columns">-->
+              <!--<label for="inputFirstName" class=" control-label">First Name</label>-->
+              <!--<input type="text" class="form-control" id="inputFirstName" placeholder="Jon">-->
+            <!--</div>-->
+            <!--<div class="four columns">-->
+              <!--<label for="inputLastName" class="control-label">Last Name</label>-->
+              <!--<input type="text" class="form-control" id="inputLastName" placeholder="Snow">-->
+            <!--</div>-->
+          <!--</div><br>-->
+          <!--<div class="row">-->
+            <!--<div class="offset-by-three six columns">-->
+              <!--<div id="ToSemail" class="form-group">-->
+                <!--<label for="inputEmail" class="control-label">Email</label>-->
+                <!--<input type="text" pattern="[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}" class="form-control" id="inputEmail" placeholder="JonSnow@North.GoT" data-error="Bruh, that email address is invalid" required>-->
+                <!--<div class="help-block with-errors"></div>-->
+              <!--</div>-->
+            <!--</div>-->
+          <!--</div><br>-->
+          <!--<input id="3500" type="checkbox" name="3500" value="agreed">I agree to complete the $3500 payment upon each successful Datable hire.-->
+          <!--<br><br>-->
+          <!--<input id="ToS" type="checkbox" name="ToS" value="agreed">I agree to the Datable <a target="_blank" href="https://docs.google.com/document/d/1MaOjibhHjicm5nEvWPLFcgx0w_g2zlFki0lS6FtIDTY/edit?usp=sharing">Terms of Service</a>-->
+          <!--<br><br>-->
+
+          <!--<div class="row">-->
+            <!--<div class="offset-by-three three columns">-->
+              <!--<div class="form-group">-->
+                <!--<button data-remodal-action="cancel" class="remodal-cancel">✖ Meh</button>-->
+              <!--</div>-->
+            <!--</div>-->
+            <!--<div class="two columns">-->
+              <!--<div class="form-group">-->
+                <!--<button data-remodal-action="confirm" type="submit" class="remodal-confirm" data-remodal-options="closeOnConfirm: false">✔ I agree</button>-->
+              <!--</div>-->
+            <!--</div>-->
+          <!--</div>-->
+        <!--</form>-->
+
+      </div>
+      <!--<br>-->
+      <button data-remodal-action="cancel" class="remodal-cancel">✖ Hhmmm...</button>
+      <button data-remodal-action="confirm" type="submit" class="remodal-confirm">✔ That's Reasonable</button>
+    </div>
+
+    <!--STEP #3-->
+    <div class="modal3 remodal" data-remodal-id="modal3" role="dialog" aria-labelledby="modal3Title" aria-describedby="modal3Desc">
+      <!--data-remodal-options="closeOnOutsideClick: false, closeOnConfirm: false">-->
+      <button data-remodal-action="close" class="remodal-close" aria-label="Close"></button>
+      <div>
+        <h3 id="modal3Title">Step 3: Email Datable</h3>
+        <!--<h6 id="modal3Desc">Complete your introduction(s)</h6>-->
+      </div>
+      <h6>Thank you for reviewing the Terms of Service.</h6>
+      <p>Please include the candidate numbers below in an email</p>
+      <p>to <a target="_blank" href="mailto:Datable@DataCommunityDC.org">Datable@DataCommunityDC.org</a></p>
+      <p>and we'll start the introduction process.</p>
+
+      <p class="candidate_introductions"></p>
+
+      <!--<br>-->
+      <!--<form action="" method="POST">-->
+        <!--<script-->
+          <!--src="https://checkout.stripe.com/checkout.js" class="stripe-button"-->
+          <!--data-key="pk_test_6pRNASCoBOKtIshFeQd4XMUh"-->
+          <!--data-amount="999"-->
+          <!--data-name="Stripe.com"-->
+          <!--data-description="Widget"-->
+          <!--data-image="/img/documentation/checkout/marketplace.png"-->
+          <!--data-locale="auto">-->
+        <!--</script>-->
+      <!--</form>-->
+      <button data-remodal-action="cancel" class="remodal-cancel">✖ Select More Candidates</button>
+      <button data-remodal-action="confirm" class="remodal-confirm">✔ Email Sent!</button>
+    </div>
+    <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/1000hz-bootstrap-validator/0.11.5/validator.min.js"></script>-->
+    <script src="./js/checkout.js"></script>
+    <!--<script type="application/javascript">-->
+      <!--$('.modal2').on('hidden.bs.modal', function() {-->
+          <!--$('#ToSform').formValidation('resetForm', true);-->
+      <!--});-->
+      <!--$(document).ready(function() {-->
+          <!--$('#ToSform').formValidation({-->
+              <!--message: 'This value is not valid',-->
+              <!--excluded: ':disabled'-->
+          <!--});-->
+      <!--});-->
+    <!--</script>-->
+    <!--REMODAL-->
+
+    <!--HELPRACE-->
     <script src="//d1culzimi74ed4.cloudfront.net/js/feedback/feedback.js"></script>
     <script>
       ChdFeedbackWidget.init({
@@ -628,7 +220,7 @@ body{
         tabTitle: "Feedback & Support",
         tabPosition: "left",
         tabBgColor: "#33C3F0",
-        tabTextColor: "#000000",
+        tabTextColor: "#ffffff",
         tabAction: "false"
       });
     </script>
