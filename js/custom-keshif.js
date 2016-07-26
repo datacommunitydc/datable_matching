@@ -42,6 +42,7 @@ google.setOnLoadCallback(function(){
     },
     loadedCb: function(){
       this.records.forEach(function(r){
+        r.data.id = r.data["Candidate #"];
         r.data.rand = r.data.id;
       });
       // shuffle ( http://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array )
