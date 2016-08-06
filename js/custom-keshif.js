@@ -185,7 +185,7 @@ google.setOnLoadCallback(function(){
       onDOM: function(d){
         var id = this.id;
         var button_text = "Introduce #" +String(id);
-        var remove_text = "#" +String(id)+" in your Pool";
+        var remove_text = "Candidate #" +String(id)+" is in your Pool";
         d3.select(d.DOM.record).select(".selectBox").on("click",
           function(){
             if(d.customSelect) {
