@@ -11,13 +11,16 @@
     <script src="./js/remodal.min.js"></script>
     <!--Remodal-->
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
-    <!--<script src="./js/jquery-1.11.1.min.js"></script>-->
-    <!--<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>-->
+    <!-- d3 -->
     <script src="./js/d3.3.5.5.min.js"></script>
 
+    <!-- Keshif -->
     <script type="text/javascript" src="js/keshif.js" charset="utf-8"></script>
     <link rel="stylesheet" href="css/keshif.css" type="text/css">
-    <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" type="text/css">-->
+
+    <!-- Keshif Help -->
+    <script type="text/javascript" src="./helpin/helpin.js" charset="utf-8"></script>
+    <link rel="stylesheet" href="./helpin/helpin.css" type="text/css">
 
     <!--Remodal-->
     <link rel="stylesheet" href="./css/checkout.css">
@@ -27,6 +30,9 @@
     <!--Custom Keshif-->
     <link rel="stylesheet" href="./css/custom-keshif.css">
     <!--Custom Keshif-->
+    <!--Joyride Guide-->
+    <link rel="stylesheet" href="./css/joyride-2.1.css">
+    <!--Joyride Guide-->
     <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600" rel="stylesheet">
 
@@ -45,18 +51,19 @@
         </div>
 
         <div class="three columns">
-          <h3 title="Feedback welcome via Helprace on the LHS" style="margin: 0;text-align: right;font-family:AgencyFB">BETA</h3>
+          <h3 title="Feedback welcome via Helprace on the LHS"
+            id="so-awesome"
+            style="margin: 0;text-align: right; font-family: AgencyFB;"> BETA</h3>
         </div>
       </div>
       <div class="row" style="margin-bottom: 15px;">
         <div class="nine columns">
           <div>
             <!--<a href="#modal">Modal №1</a>-->
-            <a class="button button-primary" href="#modal">
-              Introduce us Please  <i class="fa fa-hand-spock-o" style="font-size:18px" aria-hidden="true"></i>
-              <!--<i class='fa fa-arrow-right'></i>-->
-              <!--<i class='fa fa-arrow-right'></i>-->
-            </a>
+            <a class="button button-primary" href="#modal" id="HelpWithCheckout">
+              Candidate Pool Introductions
+              <i class="fa fa-hand-spock-o" style="font-size:18px" aria-hidden="true"></i>
+              </a>
             <div id="SelectedContainer"></div>
             <!--<form target="paypal" action="https://www.paypal.com/cgi-bin/webscr" method="post">-->
               <!--&lt;!&ndash; Identify your business so that you can collect the payments. &ndash;&gt;-->
@@ -76,8 +83,7 @@
           </div>
         </div>
         <div class="three columns">
-          <a class="button" style="margin: 0;position: absolute;right:0px" target="_blank" href="https://youtu.be/3Hmvms-1grU">Tutorial</a>
-          <!-- <a class="button" target="_blank" href="https://docs.google.com/spreadsheets/d/1hSAnjE6eRH-fvL4A6s1CSurIP-e2wcwLDF14AFvAeu0/edit#gid=864063755">See The Raw List</a> -->
+          <a class="button" style="margin: 0;position: absolute;right:0px" target="_blank" href="https://youtu.be/3Hmvms-1grU" id="HelpWithVideoTutorial">Tutorial</a>
         </div>
       </div>
       <div class="row">
@@ -234,5 +240,48 @@
       ga('send', 'pageview');
 
     </script>
+
+    <ol id="joyRideTipContent">
+      <!-- Feedback TODO: Maybe later
+      <li data-id="so-awesome" data-text="Next" class="custom">
+        <h3>Stop #1</h3>
+        <p>This thing is beta. Like, it's been through alpha.</p>
+      </li>-->
+
+      <!-- 2) Experience Level - Filter -->
+      <li data-id="HelpWithFiltering" data-button="Next" data-options="tipLocation:bottom;tipAnimation:fade">
+        <h3>Candidate Filters</h3>
+        <p>Find your Candidates by using these filters.</p>
+      </li>
+
+      <!-- 3) Introduce button (per candidate) -->
+      <li data-id="HelpWithAddIntro" data-button="Next" data-options="tipLocation:top;tipAnimation:fade">
+        <h3>Candidate Pool</h3>
+        <p>Add Candidates to your Pool with these buttons.</p>
+      </li>
+
+      <!-- 4) Introduce us - Checkout -->
+      <li data-id="HelpWithCheckout" data-button="Next" data-options="tipLocation:bottom;tipAnimation:fade">
+        <h3>Candidate Introductions</h3>
+        <p>Once you've selected all your Candidates, start the Introduction Process here.</p>
+      </li>
+
+      <!-- 5) Keshif help -->
+      <li data-id="HelpWithKeshif" data-button="Next" data-options="tipLocation:bottom;tipAnimation:fade">
+        <h3>Keshif Powerhouse</h3>
+        <p>Dive into the Keshif rabbit-hole here www.Keshif.me</p>
+      </li>
+
+      <!-- 6) Video tutorial -->
+      <li data-id="HelpWithVideoTutorial" data-button="Next" data-options="tipLocation:bottom;tipAnimation:fade">
+        <h3>Video Tutorial</h3>
+        <p>Learn from The Master here.</p>
+      </li>
+
+    </ol>
+
+    <script type="text/javascript" src="./js/jquery.cookie.js"></script>
+    <script type="text/javascript" src="./js/modernizr.mq.js"></script>
+    <script type="text/javascript" src="./js/jquery.joyride-2.1.js"></script>
   </body>
 </html>

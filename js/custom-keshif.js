@@ -129,7 +129,7 @@ google.setOnLoadCallback(function(){
         var major = this["Describe yourself in one sentence."];
         if(major===null) major = "-";
         var minor = this["Please describe three data science or data related projects you've worked on in the last three years. These can be features of larger projects, consulting projects, classified work described generally, or open source contributions."];
-        return "<span class='selectBox'><i class='fa fa-hand-pointer-o' aria-hidden='true'></i>Introduce #"+this.id+"</span>" +
+        return "<span class='selectBox'><i class='fa fa-hand-pointer-o' aria-hidden='true'></i>  Add Candidate <b>#"+this.id+"</b> to Pool</span>" +
 
 
     //    return '<form class="PayPalSubmit" target="paypal" action="https://www.paypal.com/cgi-bin/webscr" method="post">'+
@@ -185,7 +185,7 @@ google.setOnLoadCallback(function(){
       onDOM: function(d){
         var id = this.id;
         var button_text = "Introduce #" +String(id);
-        var remove_text = "Selected #" +String(id);
+        var remove_text = "#" +String(id)+" in your Pool";
         d3.select(d.DOM.record).select(".selectBox").on("click",
           function(){
             if(d.customSelect) {
