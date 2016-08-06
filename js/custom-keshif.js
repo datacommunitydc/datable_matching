@@ -111,7 +111,9 @@ google.setOnLoadCallback(function(){
         var major = this["Describe yourself in one sentence."];
         if(major===null) major = "-";
         var minor = this["Please describe three data science or data related projects you've worked on in the last three years. These can be features of larger projects, consulting projects, classified work described generally, or open source contributions."];
-        return "<span class='selectBox'>Introduce #"+this.id+"</span>" +
+        return "<span class='selectBox'><i class='fa fa-hand-pointer-o' aria-hidden='true'></i>Introduce #"+this.id+"</span>" +
+
+
     //    return '<form class="PayPalSubmit" target="paypal" action="https://www.paypal.com/cgi-bin/webscr" method="post">'+
     //'  <input type="hidden" name="cmd" value="_cart">'+
     //'  <input type="hidden" name="cbt" value="Welcome to Datable">'+

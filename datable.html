@@ -27,6 +27,11 @@
     <!--Custom Keshif-->
     <link rel="stylesheet" href="./css/custom-keshif.css">
     <!--Custom Keshif-->
+    <!--Joyride Guide-->
+    <link rel="stylesheet" href="./css/joyride-2.1.css">
+    <!--<link rel="stylesheet" href="demo-style.css">-->
+    <!--<link rel="stylesheet" href="mobile.css">-->
+    <!--Joyride Guide-->
     <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600" rel="stylesheet">
 
@@ -234,5 +239,53 @@
       ga('send', 'pageview');
 
     </script>
+
+     Joyride overlay guide
+    <script>
+      $(document).ready( function(){
+
+        observer.observe(document.body, {
+            childList: true
+          , subtree: true
+          , attributes: false
+          , characterData: false
+        })
+      })
+    </script>
+
+     Tip Content
+    <ol id="joyRideTipContent">
+      <li data-class="so-awesome" data-text="Next" class="custom">
+        <h2>Stop #1</h2>
+        <p>You can control all the details for you tour stop. Any valid HTML will work inside of Joyride.</p>
+      </li>
+      <li data-id="numero2" data-button="Next" data-options="tipLocation:top;tipAnimation:fade">
+        <h2>Stop #2</h2>
+        <p>Get the details right by styling Joyride with a custom stylesheet!</p>
+      </li>
+      <li data-id="numero3" data-button="Next" data-options="tipLocation:right">
+        <h2>Stop #3</h2>
+        <p>It works right aligned.</p>
+      </li>
+      <li data-button="Next">
+        <h2>Stop #4</h2>
+        <p>It works as a modal too!</p>
+      </li>
+      <li data-class="someclass" data-button="Next" data-options="tipLocation:right">
+        <h2>Stop #4.5</h2>
+        <p>It works with classes, and only on the first visible element with that class.</p>
+      </li>
+      <li data-id="numero5" data-button="Close">
+        <h2>Stop #5</h2>
+        <p>Now what are you waiting for? Add this to your projects and get the most out of your apps!</p>
+      </li>
+    </ol>
+
+    <!--&lt;!&ndash; Run the plugin &ndash;&gt;-->
+    <script type="application/javascript" src="./js/custom-joyride.js"></script>
+    <!--&lt;!&ndash;<script type="text/javascript" src="./js/jquery-1.10.1.js"></script>&ndash;&gt;-->
+    <script type="text/javascript" src="./js/jquery.cookie.js"></script>
+    <script type="text/javascript" src="./js/modernizr.mq.js"></script>
+    <script type="text/javascript" src="./js/jquery.joyride-2.1.js"></script>
   </body>
 </html>
