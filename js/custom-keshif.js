@@ -53,6 +53,24 @@ google.setOnLoadCallback(function(){
           this.records[j].data.rand = temp;
       }
     },
+    onReady: function(){
+      var me=this;
+      setTimeout(function(){
+        // highlight the experience level
+        me.summaries_by_name["Experience Level"].DOM.root.attr("id","HelpWithFiltering");
+        // HelpWithAddIntro
+        d3.select(me.records[0].DOM.record).select(".selectBox").attr("id","HelpWithAddIntro");
+        // Keshif help button
+        me.DOM.showHelpIn.attr("id","HelpWithKeshif");
+        // Do more? Ask Adil
+        
+        $('#joyRideTipContent').joyride({
+          autoStart: true,
+          modal: true,
+          expose: true
+        });
+      },1000); // wait just another second until the animations stop.
+    },
     summaries: [
       // { name: "When was the last time you committed code?" },
       { name: "Experience Level", value: "What's your experience level?",

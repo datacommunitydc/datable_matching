@@ -485,8 +485,16 @@ body{
 }
 
 /* Remove some keshif buttons for simplicity */
-.rightBoxes > .fa-question-circle{ display: none !important; }
 .rightBoxes > .showConfigButton{ display: none !important; }
 .rightBoxes > .fullscreen{ display: none !important; }
 .kshf .saveSelection { display: none !important; }
 .kshf .header_listSortColumn{ display: none !important; }
+
+
+.joyride-expose-wrapper{
+  background-color: initial !important; 
+}
+.joyride-modal-bg{
+  background: initial !important; 
+}
+

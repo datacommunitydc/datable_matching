@@ -45,6 +45,7 @@ var kshf = {
   maxVisibleItems_Default: 100,
   scrollWidth: 19,
   attribPanelWidth: 220,
+  catHeight: 18,
 
   map: {
     // http://{s}.tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png
@@ -84,16 +85,17 @@ var kshf = {
       RemoveFilter: "Remove filter",
       RemoveAllFilters: "Remove all filters",
       SaveSelection: "Save Selection",
-      MinimizeSummary: "Minimize summary",
-      OpenSummary: "Open summary",
-      MaximizeSummary: "Maximize summary",
-      RemoveSummary: "Remove summary",
+      MinimizeSummary: "Minimize",
+      OpenSummary: "Open",
+      MaximizeSummary: "Maximize",
+      RemoveSummary: "Remove",
       ReverseOrder: "Reverse order",
       Reorder: "Reorder",
-      ShowMoreInfo: "Show more info",
+      ShowMoreInfo: "Show record info",
       Percentiles: "Percentiles",
-      LockToCompare: "Lock to compare",
+      LockToCompare: "Lock selection",
       Unlock: "Unlock",
+      ChangeMeasureFunc: "Change measure-metric",
       Search: "Search",
       CreatingBrowser: "Creating Keshif Browser",
       Rows: "Rows",
@@ -111,7 +113,7 @@ var kshf = {
       Not: "Not",
       EditTitle: "Rename",
       ResizeBrowser: "Resize browser",
-      RemoveRecords: "Remove record view",
+      RemoveRecords: "Remove record panel",
       EditFormula: "Edit formula",
       NoData: "(no data)",
       ZoomToFit: "Zoom to fit",
@@ -125,14 +127,14 @@ var kshf = {
       ShowFullscreen: "Tam ekran",
       RemoveFilter: "Filtreyi kaldır",
       RemoveAllFilters: "Tüm filtreleri kaldır",
-      MinimizeSummary: "Özeti ufalt",
-      OpenSummary: "Özeti aç",
-      MaximizeSummary: "Özeti büyüt",
-      RemoveSummary: "Özeti kaldır",
+      MinimizeSummary: "Ufalt",
+      OpenSummary: "Aç",
+      MaximizeSummary: "Büyüt",
+      RemoveSummary: "Kaldır",
       ReverseOrder: "Ters sırala",
       Reorder: "Yeniden sırala",
       ShowMoreInfo: "Daha fazla bilgi",
-      Percentiles: "Yüzdeler",
+      Percentiles: "Yüzde",
       LockToCompare: "Kilitle ve karşılaştır",
       Unlock: "Kilidi kaldır",
       Search: "Ara",
@@ -387,16 +389,9 @@ var kshf = {
   gistLogin: false,
   getGistLogin: function(){
     if(this.githubToken===undefined) return;
-    $.ajax( 'https://api.github.com/user',
-      { method: "GET",
-        async: true,
-        dataType: "json",
-        headers: {Authorization: "token "+kshf.githubToken},
-        success: function(response){ 
-          kshf.gistLogin = response.login;
-        }
-      }
-    );
+    d3.xhr('https://api.github.com/user')
+      .header("Authorization","token "+kshf.githubToken)
+      .get(function(error, data){ kshf.gistLogin = JSON.parse(data.response).login; });
   },
 
   kshfLogo: '<svg class="kshfLogo" viewBox="0 0 200 200">'+
@@ -407,24 +402,20 @@ var kshf = {
     '</svg>'
 };
 
-// tipsy, facebook style tooltips for jquery
-// Modified / simplified version for internal Keshif use
-// version 1.0.0a
+// tipsy : Modified & simplified version for internal Keshif use
 // (c) 2008-2010 jason frame [jason@onehackoranother.com]
 // released under the MIT license
 
 function Tipsy(element, options) {
-  this.jq_element = $(element);
-  this.options = $.extend(
-    { }, 
-    { className: null, gravity: 'n', },
-    options
-  );
+  this.jq_element = element;
+  this.options = options;
+  if(this.options.className === undefined) this.options.className = null;
+  if(this.options.gravity   === undefined) this.options.gravity   = 'n';
 };
 Tipsy.prototype = {
   show: function() {
     var maybeCall = function(thing, ctx) {
-        return (typeof thing == 'function') ? (thing.call(ctx)) : thing;
+      return (typeof thing == 'function') ? (thing.call(ctx)) : thing;
     };
 
     if(kshf.activeTipsy) kshf.activeTipsy.hide();
@@ -433,38 +424,40 @@ Tipsy.prototype = {
 
     var title = this.getTitle();
     if(!title) return;
-    var jq_tip = this.tip();
+    this.tip();
 
-    jq_tip.find('.tipsy-inner')['html'](title);
-    jq_tip[0].className = 'tipsy'; // reset classname in case of dynamic gravity
-    jq_tip.remove().css({top: 0, left: 0, visibility: 'hidden', display: 'block'}).prependTo(document.body);
+    this.jq_tipsy_inner.html(title);
+    this.jq_tip.attr("class","tipsy"); // reset classname in case of dynamic gravity
+    this.jq_tip.style({top: 0, left: 0, visibility: 'hidden', display: 'block'});
+    kshf.browser.DOM.root[0][0].appendChild(this.jq_tip[0][0]);
 
-    var pos = $.extend({}, this.jq_element.offset(), {
-        width: this.jq_element[0].offsetWidth,
-        height: this.jq_element[0].offsetHeight
-    });
+    if(this.options.className) {
+      this.jq_tip.attr("class", "tipsy "+maybeCall(this.options.className, this.jq_element));
+    }
 
-    var actualWidth = jq_tip[0].offsetWidth,
-        actualHeight = jq_tip[0].offsetHeight,
-        gravity = maybeCall(this.options.gravity, this.jq_element[0]);
+    var pos = this.jq_element.getBoundingClientRect();
+
+    var actualWidth = this.jq_tip[0][0].offsetWidth,
+        actualHeight = this.jq_tip[0][0].offsetHeight,
+        gravity = maybeCall(this.options.gravity, this.jq_element);
 
     this.tipWidth = actualWidth;
     this.tipHeight = actualHeight;
 
     var tp;
     switch (gravity.charAt(0)) {
-        case 'n':
-            tp = {top: pos.top + pos.height, left: pos.left + pos.width / 2 - actualWidth / 2};
-            break;
-        case 's':
-            tp = {top: pos.top - actualHeight, left: pos.left + pos.width / 2 - actualWidth / 2};
-            break;
-        case 'e':
-            tp = {top: pos.top + pos.height / 2 - actualHeight / 2, left: pos.left - actualWidth};
-            break;
-        case 'w':
-            tp = {top: pos.top + pos.height / 2 - actualHeight / 2, left: pos.left + pos.width};
-            break;
+      case 'n':
+        tp = {top: pos.top + pos.height, left: pos.left + pos.width / 2 - actualWidth / 2};
+        break;
+      case 's':
+        tp = {top: pos.top - actualHeight, left: pos.left + pos.width / 2 - actualWidth / 2};
+        break;
+      case 'e':
+        tp = {top: pos.top + pos.height / 2 - actualHeight / 2, left: pos.left - actualWidth};
+        break;
+      case 'w':
+        tp = {top: pos.top + pos.height / 2 - actualHeight / 2, left: pos.left + pos.width};
+        break;
     }
 
     if (gravity.length == 2) {
@@ -475,33 +468,36 @@ Tipsy.prototype = {
       }
     }
 
-    jq_tip.css(tp).addClass('tipsy-' + gravity);
-    jq_tip.find('.tipsy-arrow')[0].className = 'tipsy-arrow tipsy-arrow-' + gravity.charAt(0);
-    if (this.options.className) {
-      jq_tip.addClass(maybeCall(this.options.className, this.jq_element[0]));
-    }
+    var browserPos = kshf.browser.DOM.root[0][0].getBoundingClientRect();
+    tp.left = tp.left - browserPos.left;
+    tp.top = tp.top - browserPos.top;
 
-    jq_tip.stop().css({opacity: 0, display: 'block', visibility: 'visible'}).animate({opacity: 1},200);
+    this.jq_tip
+      .style('left',tp.left+"px")
+      .style('top', tp.top +"px")
+      .attr("class", this.jq_tip.attr("class")+' tipsy-' + gravity);
+    this.jq_tipsy_arrow.attr("class", 'tipsy-arrow tipsy-arrow-' + gravity.charAt(0));
+
+    this.jq_tip.style({opacity: 0, visibility: 'visible'}).transition().duration(200).style('opacity',1);
   },
   hide: function(){
     kshf.activeTipsy = undefined;
-    this.tip().stop().fadeOut(200,function() { $(this).remove(); });
+    if(this.jq_tip) this.jq_tip.transition().duration(200).style('opacity',0).remove();
   },
   getTitle: function() {
-    var title, jq_e = this.jq_element, o = this.options;
     var title, o = this.options;
     if (typeof o.title == 'string') {
       title = o.title;
     } else if (typeof o.title == 'function') {
-      title = o.title.call(jq_e[0]);
+      title = o.title.call(this.jq_element);
     }
-    title = ('' + title).replace(/(^\s*|\s*$)/, "");
-    return title;
+    return ('' + title).replace(/(^\s*|\s*$)/, "");
   },
   tip: function() {
     if(this.jq_tip) return this.jq_tip;
-    this.jq_tip = $('<div class="tipsy"></div>').html('<div class="tipsy-arrow"></div><div class="tipsy-inner"></div>');
-    this.jq_tip.data('tipsy-pointee', this.jq_element[0]);
+    this.jq_tip = d3.select(document.createElement("div")).attr("class","tipsy");
+    this.jq_tipsy_arrow = this.jq_tip.append("div").attr("class","tipsy-arrow");
+    this.jq_tipsy_inner = this.jq_tip.append("div").attr("class","tipsy-inner");
     return this.jq_tip;
   }
 };
@@ -584,8 +580,8 @@ kshf.Record.prototype = {
     if(this.DOM.record) this.DOM.record.setAttribute("selection","onRecord");
     // summaries that this item appears in
     this._aggrCache.forEach(function(aggr){
-      if(aggr.DOM.aggrGlyph) aggr.DOM.aggrGlyph.setAttribute("selection","onRecord");
-      if(aggr.DOM.matrixRow) aggr.DOM.matrixRow.setAttribute("selection","onRecord");
+      if(aggr.DOM.aggrGlyph) aggr.DOM.aggrGlyph.setAttribute("cSelection","onRecord");
+      if(aggr.DOM.matrixRow) aggr.DOM.matrixRow.setAttribute("cSelection","onRecord");
       if(aggr.summary && aggr.summary.setRecordValue) aggr.summary.setRecordValue(this);
     },this);
   },
@@ -655,14 +651,11 @@ kshf.Aggregate = function(){};
 kshf.Aggregate.prototype = {
   /** -- */
   init: function(d,idIndex){
-    // Items which are mapped/related to this item
+    // Records which are mapped to this aggregate
     this.records = [];
-
-    this.resetAggregateMeasures();
-
-    // what this aggregate represents
+    // What this aggregate represents
     this.data = d;
-
+    // Aggregates can also be defined by an index
     this.idIndex = idIndex;
     // Selection state
     //  1: selected for inclusion (AND)
@@ -671,19 +664,49 @@ kshf.Aggregate.prototype = {
     //  0: not selected
     this.selected = 0;
     
-    this.DOM = {};
-    // If item is used as a filter (can be primary if looking at links), this will be set
-    this.DOM.aggrGlyph  = undefined;
+    this.DOM = {
+      aggrGlyph: undefined
+    };
+
+    this.resetAggregateMeasures();
   },
-  /** Returns unique ID of the item. */
+  /** Returns unique ID of the aggregate. */
   id: function(){
     return this.data[this.idIndex];
+  },
+  /** -- */
+  resetAggregateMeasures: function(){
+    this._measure = {
+      Total     : 0,
+      Active    : 0,
+      Highlight : 0,
+      Compare_A : 0,
+      Compare_B : 0,
+      Compare_C : 0
+    };
+    this.recCnt = {
+      Total     : 0,
+      Active    : 0,
+      Highlight : 0,
+      Compare_A : 0,
+      Compare_B : 0,
+      Compare_C : 0
+    };
+    this.records.forEach(function(record){
+      if(record.measure_Self===null) return;
+      this._measure.Total += record.measure_Self;
+      this.recCnt.Total++;
+      if(record.isWanted) {
+        this._measure.Active += record.measure_Self;
+        this.recCnt.Active++;
+      }
+    },this);
   },
   /** -- */
   addRecord: function(record){
     this.records.push(record);
     record._aggrCache.push(this);
-    if(record.measure_Self===null || record.measure_Self===0) return;
+    if(record.measure_Self===null) return;
     this._measure.Total += record.measure_Self;
     this.recCnt.Total++;
     if(record.isWanted) {
@@ -695,7 +718,7 @@ kshf.Aggregate.prototype = {
   removeRecord: function(record){
     this.records.splice(this.records.indexOf(record),1);
     record._aggrCache.splice(record._aggrCache.indexOf(this),1);
-    if(record.measure_Self===null || record.measure_Self===0) return;
+    if(record.measure_Self===null) return;
     this._measure.Total -= record.measure_Self;
     this.recCnt.Total--;
     if(record.isWanted) {
@@ -710,34 +733,6 @@ kshf.Aggregate.prototype = {
       return (r===0) ? 0 : this._measure[v]/r ; // avoid division by zero.
     }
     return this._measure[v];
-  },
-  /** -- */
-  resetAggregateMeasures: function(){
-    this._measure = {
-      Total: 0,
-      Active: 0,
-      Highlight: 0,
-      Compare_A: 0,
-      Compare_B: 0,
-      Compare_C: 0
-    };
-    this.recCnt = {
-      Total: 0,
-      Active: 0,
-      Highlight: 0,
-      Compare_A: 0,
-      Compare_B: 0,
-      Compare_C: 0
-    };
-    this.records.forEach(function(record){
-      if(record.measure_Self===null || record.measure_Self===0) return;
-      this._measure.Total += record.measure_Self;
-      this.recCnt.Total++;
-      if(record.isWanted) {
-        this._measure.Active += record.measure_Self;
-        this.recCnt.Active++;
-      }
-    },this);
   },
   /** -- */
   ratioHighlightToTotal: function(){
@@ -755,10 +750,12 @@ kshf.Aggregate.prototype = {
   /** -- */
   unselectAggregate: function(){
     if(this.DOM.aggrGlyph) {
-      this.DOM.aggrGlyph.removeAttribute("selection");
+      this.DOM.aggrGlyph.removeAttribute("cSelection");
       this.DOM.aggrGlyph.removeAttribute("showlock");
     }
-    if(this.DOM.matrixRow) this.DOM.matrixRow.removeAttribute("selection");
+    if(this.DOM.matrixRow) {
+      this.DOM.matrixRow.removeAttribute("selection");
+    }
   },
 
   /** -- */
@@ -782,37 +779,35 @@ kshf.Aggregate.prototype = {
     this.records.forEach(function(record){ record.remForHighlight(false); });
   }, 
 
-  // CATEGORICAL AGGREGATES
-  /** -- */
-  f_selected: function(){ return this.selected!==0; },
-  f_included: function(){ return this.selected>0; },
-
-  is_NONE:function(){ return this.selected===0; },
-  is_NOT: function(){ return this.selected===-1; },
-  is_AND: function(){ return this.selected===1; },
-  is_OR : function(){ return this.selected===2; },
+  // CATEGORICAL AGGREGATES ONLY
+  f_selected: function(){ return this.selected!== 0; },
+  f_included: function(){ return this.selected >  0; },
+  is_NONE   : function(){ return this.selected=== 0; },
+  is_NOT    : function(){ return this.selected===-1; },
+  is_AND    : function(){ return this.selected=== 1; },
+  is_OR     : function(){ return this.selected=== 2; },
 
   set_NONE: function(){
     if(this.inList!==undefined) {
       this.inList.splice(this.inList.indexOf(this),1);
     }
     this.inList = undefined;
-    this.selected = 0; this._refreshFacetDOMSelected();
+    this.selected = 0; this._refreshCatDOMSelected();
   },
   set_NOT: function(l){
     if(this.is_NOT()) return;
     this._insertToList(l);
-    this.selected =-1; this._refreshFacetDOMSelected();
+    this.selected =-1; this._refreshCatDOMSelected();
   },
   set_AND: function(l){
     if(this.is_AND()) return;
     this._insertToList(l);
-    this.selected = 1; this._refreshFacetDOMSelected();
+    this.selected = 1; this._refreshCatDOMSelected();
   },
   set_OR: function(l){
     if(this.is_OR()) return;
     this._insertToList(l);
-    this.selected = 2; this._refreshFacetDOMSelected();
+    this.selected = 2; this._refreshCatDOMSelected();
   },
 
   /** Internal */
@@ -824,8 +819,19 @@ kshf.Aggregate.prototype = {
     l.push(this);
   },
   /** Internal */
-  _refreshFacetDOMSelected: function(){
-    if(this.DOM.aggrGlyph) this.DOM.aggrGlyph.setAttribute("selected",this.selected);
+  _refreshCatDOMSelected: function(){
+    if(this.DOM.aggrGlyph) {
+      if(this.selected===0) {
+        this.DOM.aggrGlyph.removeAttribute("cFiltered"); return;
+      }
+      var v = "?";
+      switch(this.selected){
+        case 1: v="AND"; break;
+        case 2: v="OR";  break;
+        case -1:v="NOT"; break;
+      }
+      this.DOM.aggrGlyph.setAttribute("cFiltered",v);
+    }
   },
 };
 
@@ -851,7 +857,7 @@ kshf.BreadCrumb = function(browser, selectType){
   this.selectType = selectType;
 };
 kshf.BreadCrumb.prototype = {
-  isCompare: function(){
+  isCompareSelection: function(){
     return this.selectType.substr(0,7)==="Compare";
   },
   showCrumb: function(summary){
@@ -873,7 +879,7 @@ kshf.BreadCrumb.prototype = {
       }
     }
     details = "" + details; // convert to string, in case the return value is a number...
-    if(details) this.DOM.select(".crumbDetails").html(details.replace(/<br>/g," "));
+    if(details) this.DOM.select(".crumbDetails").html(details.replace(/<br>/gi," "));
   },
   removeCrumb: function(){
     if(this.DOM === null) return;
@@ -888,7 +894,7 @@ kshf.BreadCrumb.prototype = {
   _insertDOM_crumb: function(summary){
     var me=this;
     this.DOM = this.browser.DOM.breadcrumbs.append("span")
-      .attr("class","crumb crumbMode_"+this.selectType)
+      .attr("class","breadCrumb crumbMode_"+this.selectType)
       .each(function(){
         if(me.selectType!=="Highlight"){
           var l=this.parentNode.childNodes.length;
@@ -907,11 +913,11 @@ kshf.BreadCrumb.prototype = {
       })
       .on("mouseenter",function(){
         this.tipsy.show();
-        if(me.isCompare()) me.browser.refreshMeasureLabels(me.selectType);
+        if(me.isCompareSelection()) me.browser.refreshMeasureLabels(me.selectType);
       })
       .on("mouseleave",function(){
         this.tipsy.hide();
-        if(me.isCompare()) me.browser.refreshMeasureLabels();
+        if(me.isCompareSelection()) me.browser.refreshMeasureLabels();
       })
       .on("click",function(){
         this.tipsy.hide();
@@ -925,7 +931,7 @@ kshf.BreadCrumb.prototype = {
         }
       });
 
-    this.DOM.append("span").attr("class","clearCrumbButton").append("span").attr("class","fa");
+    this.DOM.append("span").attr("class","breadCrumbIcon fa");
     var y = this.DOM.append("span").attr("class","crumbText");
     y.append("span").attr("class","crumbHeader");
     y.append("span").attr("class","crumbDetails");
@@ -1009,6 +1015,10 @@ kshf.Filter.prototype = {
       this.browser.updateAfterFilter();
     }
   },
+  /** -- */
+  getRichText: function(){
+    return "<b>"+this.summary.summaryName+"</b>: "+this.filterView_Detail.call(this)+" ";
+  }
 };
 
 /** -- */
@@ -1305,15 +1315,15 @@ kshf.RecordDisplay.prototype = {
                   title: (d==="Filter") ? kshf.lang.cur.RemoveFilter : kshf.lang.cur.Unlock
                 });
               })
-              .on("mouseover",function(){ this.tipsy.show(); })
-              .on("mouseout", function(){ this.tipsy.hide(); })
-              .on("click",function(d){
-                this.tipsy.hide();
+              .on("mouseenter", function(){ this.tipsy.show(); })
+              .on("mouseleave", function(){ this.tipsy.hide(); })
+              .on("click", function(d){
                 if(d==="Filter"){
                   me.spatialFilter.clearFilter();
                 } else if(d!=="Highlight"){
                   me.browser.clearSelect_Compare(d.substr(8), true);
                 }
+                this.tipsy.hide();
               });
 
       this.drawSelect = false;
@@ -1497,9 +1507,7 @@ kshf.RecordDisplay.prototype = {
         .call(this.nodeZoomBehavior);
 
       var gggg = this.DOM.recordNodeLink_SVG.append("g");
-
-      this.DOM.linkGroup = gggg.append("g").attr("class","linkGroup");
-
+      this.DOM.linkGroup   = gggg.append("g").attr("class","linkGroup");
       this.DOM.recordGroup = gggg.append("g").attr("class","recordGroup recordGroup_Node");
 
       this.DOM.NodeLinkControl = this.DOM.recordDisplayWrapper.append("span").attr("class","NodeLinkControl");
@@ -1600,23 +1608,24 @@ kshf.RecordDisplay.prototype = {
       
       this.map_refreshColorScaleBins();
 
-      this.DOM.recordDisplayHeader.append("div").attr("class","itemRank_control fa")
+      this.DOM.itemRank_control = this.DOM.recordDisplayHeader.append("div").attr("class","itemRank_control fa")
         .each(function(){
           this.tipsy = new Tipsy(this, {gravity: 'n', 
             title: function(){ return (me.showRank?"Hide":"Show")+" ranking"; }});
         })
-        .on("mouseover",function(){ this.tipsy.show(); })
-        .on("mouseout", function(){ this.tipsy.hide(); })
-        .on("click",    function(){ this.tipsy.hide(); me.setShowRank(!me.showRank); });
+        .on("mouseenter", function(){ this.tipsy.show(); })
+        .on("mouseleave", function(){ this.tipsy.hide(); })
+        .on("click",      function(){ this.tipsy.hide(); me.setShowRank(!me.showRank); });
 
       this.initDOM_SortSelect();
       this.initDOM_GlobalTextSearch();
 
-      this.DOM.recordDisplayHeader.append("div").attr("class","buttonRecordViewRemove fa fa-times")
+      this.DOM.buttonRecordViewRemove = this.DOM.recordDisplayHeader.append("div")
+        .attr("class","buttonRecordViewRemove fa fa-times")
         .each(function(){ this.tipsy = new Tipsy(this, {gravity: 'ne', title: kshf.lang.cur.RemoveRecords }); })
-        .on("mouseover",function(){ this.tipsy.show(); })
-        .on("mouseout", function(){ this.tipsy.hide(); })
-        .on("click",    function(){ this.tipsy.hide(); me.removeRecordViewSummary(); });
+        .on("mouseenter", function(){ this.tipsy.show(); })
+        .on("mouseleave", function(){ this.tipsy.hide(); })
+        .on("click",      function(){ this.tipsy.hide(); me.removeRecordViewSummary(); });
 
       var x= this.DOM.recordDisplayHeader.append("span");
       x.append("span").text("View: ").attr("class","recordView_HeaderSet");
@@ -1629,15 +1638,15 @@ kshf.RecordDisplay.prototype = {
         .each(function(d){ 
           this.tipsy = new Tipsy(this, {gravity: 'ne', title: function(){ return "View as "+d.v; } }); 
         })
-        .on("mouseover",function(){ this.tipsy.show(); })
-        .on("mouseout", function(){ this.tipsy.hide(); })
-        .on("click",    function(d){ me.viewAs(d.v); });
+        .on("mouseenter", function(){ this.tipsy.show(); })
+        .on("mouseleave", function(){ this.tipsy.hide(); })
+        .on("click",      function(d){ this.tipsy.hide(); me.viewAs(d.v); });
 
       this.DOM.scrollToTop = this.DOM.recordDisplayHeader.append("div").attr("class","scrollToTop fa fa-arrow-up")
         .each(function(){ this.tipsy = new Tipsy(this, {gravity: 'e', title: kshf.lang.cur.ScrollToTop }); })
-        .on("mouseover",function(){ this.tipsy.show(); })
-        .on("mouseout", function(){ this.tipsy.hide(); })
-        .on("click",    function(){ this.tipsy.hide(); kshf.Util.scrollToPos_do(me.DOM.recordGroup,0); });
+        .on("mouseenter", function(){ this.tipsy.show(); })
+        .on("mouseleave", function(){ this.tipsy.hide(); })
+        .on("click",      function(){ this.tipsy.hide(); kshf.Util.scrollToPos_do(me.DOM.recordGroup,0); });
     },
     /** -- */
     setSpatialFilter: function(){
@@ -1803,9 +1812,9 @@ kshf.RecordDisplay.prototype = {
       this.DOM.recordTextSearch.append("span").attr("class","fa fa-times-circle clearSearchText")
         .attr("mode","and")
         .each(function(){ this.tipsy = new Tipsy(this, {gravity: 'ne', title: kshf.lang.cur.RemoveFilter }); })
-        .on("mouseover",function(){ this.tipsy.show(); })
-        .on("mouseout",function(){ this.tipsy.hide(); })
-        .on("click",function() { this.tipsy.hide(); me.textFilter.clearFilter(); });
+        .on("mouseenter", function(){ this.tipsy.show(); })
+        .on("mouseleave", function(){ this.tipsy.hide(); })
+        .on("click",      function(){ this.tipsy.hide(); me.textFilter.clearFilter(); });
       
       this.DOM.recordTextSearch.selectAll(".textSearchMode").data(["and","or"]).enter()
         .append("span")
@@ -1816,10 +1825,9 @@ kshf.RecordDisplay.prototype = {
               gravity: 'ne', 
               title: (d==="and") ? "All words<br> must appear." : "At least one word<br> must appear." });
           })
-          .on("mouseover",function(){ this.tipsy.show(); })
-          .on("mouseout",function(){ this.tipsy.hide(); })
-          .on("click",function(d) {
-            this.tipsy.hide();
+          .on("mouseenter", function(){ this.tipsy.show(); })
+          .on("mouseleave", function(){ this.tipsy.hide(); })
+          .on("click",    function(d) { this.tipsy.hide();
             me.DOM.recordTextSearch.attr("mode",d);
             me.textFilter.multiMode = d;
             me.textFilter.addFilter();
@@ -1833,9 +1841,10 @@ kshf.RecordDisplay.prototype = {
 
       this.DOM.NodeLinkAttrib.append("span").attr("class","fa fa-share-alt NodeLinkAttribIcon")
         .each(function(d){ this.tipsy = new Tipsy(this, { gravity: 'e',  title: "Show/Hide Links" }); })
-        .on("mouseover",function(){ this.tipsy.show(); })
-        .on("mouseout",function(){ this.tipsy.hide(); })
-        .on("click",function(){ me.DOM.root.attr("hideLinks", me.DOM.root.attr("hideLinks")?null:true ); });
+        .on("mouseenter", function(){ this.tipsy.show(); })
+        .on("mouseleave", function(){ this.tipsy.hide(); })
+        .on("click",      function(){ this.tipsy.hide();
+          me.DOM.root.attr("hideLinks", me.DOM.root.attr("hideLinks")?null:true ); });
 
       var s = this.DOM.NodeLinkAttrib.append("select")
         .on("change",function(){
@@ -1926,11 +1935,13 @@ kshf.RecordDisplay.prototype = {
 
       this.refreshSortingOptions();
 
-      this.DOM.recordDisplayHeader.append("span").attr("class","sortColumn sortButton fa")
+      this.DOM.recordSortButton = this.DOM.recordDisplayHeader.append("span")
+        .attr("class","recordSortButton sortButton fa")
         .each(function(){ this.tipsy = new Tipsy(this, { gravity: 'w', title: kshf.lang.cur.ReverseOrder }); })
-        .on("mouseover",function(){ this.tipsy.show(); })
-        .on("mouseout",function(){ this.tipsy.hide(); })
-        .on("click",function(d){
+        .on("mouseenter", function(){ this.tipsy.show(); })
+        .on("mouseleave", function(){ this.tipsy.hide(); })
+        .on("click",function(){
+          this.tipsy.hide();
           // NOTE: Only on list/grid views
           me.sortingOpt_Active.inverse = me.sortingOpt_Active.inverse?false:true;
           this.setAttribute("inverse",me.sortingOpt_Active.inverse);
@@ -1956,27 +1967,23 @@ kshf.RecordDisplay.prototype = {
     setSortColumnWidth: function(v){
       if(this.displayType!=='list') return;
       this.sortColWidth = Math.max(Math.min(v,110),30); // between 30 and 110 pixels
-      this.DOM.recordsSortCol.style("width",this.sortColWidth+"px");
+      this.DOM.recordSortCol.style("width",this.sortColWidth+"px");
       this.refreshAdjustSortColumnWidth();
+    },
+    /** -- */
+    getSortingLabel: function(d){
+      var s = this.sortingOpt_Active.sortLabel.call(d.data,d);
+      if(s===null || s===undefined) return "";
+      if(typeof s!=="string") s = this.sortColFormat(s);
+      return this.sortingOpt_Active.printWithUnitName(s);
     },
     /** -- */
     refreshRecordSortLabels: function(d3_selection){
       if(this.displayType!=='list') return; // Only list-view allows sorting
-      if(d3_selection===undefined) d3_selection = this.DOM.recordsSortCol;
+      if(d3_selection===undefined) d3_selection = this.DOM.recordSortCol;
+
       var me=this;
-      var labelFunc=this.sortingOpt_Active.sortLabel;
-      var sortColformat = function(a){ return a.toLocaleString(); };
-      //d3.format(".s")
-      if(this.sortingOpt_Active.isTimeStamp()){
-        sortColformat = this.sortingOpt_Active.timeTyped.print;
-      }
-      d3_selection.html(function(d){
-        var s=labelFunc.call(d.data,d);
-        if(s===null || s===undefined) return "";
-        this.setAttribute("title",s);
-        if(typeof s!=="string") s = sortColformat(s);
-        return me.sortingOpt_Active.printWithUnitName(s);
-      });
+      d3_selection.html(function(d){ return me.getSortingLabel(d); });
     },
     /** -- */
     refreshSortingOptions: function(){
@@ -2048,6 +2055,12 @@ kshf.RecordDisplay.prototype = {
         var curHeight = this.sortingOpt_Active.getHeight();
         this.sortingOpt_Active.setAsRecordSorting();
         this.sortingOpt_Active.setHeight(curHeight);
+      }
+
+      // Sort column format function
+      this.sortColFormat = function(a){ return a.toLocaleString(); };
+      if(this.sortingOpt_Active.isTimeStamp()){
+        this.sortColFormat = this.sortingOpt_Active.timeTyped.print;
       }
 
       // If the record view summary is not set, no need to proceed with sorting or visual
@@ -2345,8 +2358,8 @@ kshf.RecordDisplay.prototype = {
           var DOM = this;
           if(this.tipsy) {
             this.tipsy.show();
-            this.tipsy.jq_tip[0].style.left = (d3.event.pageX-this.tipsy.tipWidth-10)+"px";
-            this.tipsy.jq_tip[0].style.top = (d3.event.pageY-this.tipsy.tipHeight/2)+"px";
+            this.tipsy.jq_tip[0][0].style.left = (d3.event.pageX-this.tipsy.tipWidth-10)+"px";
+            this.tipsy.jq_tip[0][0].style.top = (d3.event.pageY-this.tipsy.tipHeight/2)+"px";
           }
 
           // mouse is moving fast, should wait a while...
@@ -2375,8 +2388,8 @@ kshf.RecordDisplay.prototype = {
         .on("mousemove", function(){
           this._mousemove = true;
           if(this.tipsy){
-            this.tipsy.jq_tip[0].style.left = (d3.event.pageX-this.tipsy.tipWidth-10)+"px";
-            this.tipsy.jq_tip[0].style.top = (d3.event.pageY-this.tipsy.tipHeight/2)+"px";
+            this.tipsy.jq_tip[0][0].style.left = (d3.event.pageX-this.tipsy.tipWidth-10)+"px";
+            this.tipsy.jq_tip[0][0].style.top = (d3.event.pageY-this.tipsy.tipHeight/2)+"px";
           }
         })
         .on("click",function(d){
@@ -2404,7 +2417,7 @@ kshf.RecordDisplay.prototype = {
           this.refreshRecordSortLabels(x);
         }
         // TOGGLE DETAIL
-        newRecords.append("div").attr("class","recordToggleDetail")
+        newRecords.append("div").attr("class","recordToggleDetail fa")
           .each(function(d){
             this.tipsy = new Tipsy(this, {
               gravity:'s',
@@ -2415,18 +2428,17 @@ kshf.RecordDisplay.prototype = {
               }
             });
           })
-          .on("mouseover",function(){ this.tipsy.show(); })
-          .on("mouseout" ,function(){ this.tipsy.hide(); })
-          .append("span").attr("class","item_details_toggle fa")
-            .on("click", function(record){
-              this.parentNode.tipsy.hide();
-              if(me.detailsToggle==="one" && me.displayType==='list'){
-                record.setRecordDetails(!record.showDetails);
-              }
-              if(me.detailsToggle==="zoom"){
-                me.browser.updateRecordDetailPanel(record);
-              }
-            });
+          .on("mouseenter", function(){ this.tipsy.show(); })
+          .on("mouseleave", function(){ this.tipsy.hide(); })
+          .on("click", function(record){
+            this.tipsy.hide();
+            if(me.detailsToggle==="one" && me.displayType==='list'){
+              record.setRecordDetails(!record.showDetails);
+            }
+            if(me.detailsToggle==="zoom"){
+              me.browser.updateRecordDetailPanel(record);
+            }
+          });
 
         // Insert the custom content!
         // Note: the value was already evaluated and stored in the record object
@@ -2466,8 +2478,9 @@ kshf.RecordDisplay.prototype = {
       } else if(this.displayType==='nodelink'){
         this.refreshRecordColors();
       } else {
-        this.DOM.recordsSortCol = this.DOM.recordGroup.selectAll(".recordSortCol");
+        this.DOM.recordSortCol = this.DOM.recordGroup.selectAll(".recordSortCol");
         this.DOM.recordRanks    = this.DOM.recordGroup.selectAll(".recordRank");
+        this.DOM.recordToggleDetail = this.DOM.recordGroup.selectAll(".recordToggleDetail");
       }
 
       this.updateRecordVisibility();
@@ -2727,7 +2740,7 @@ kshf.Panel.prototype = {
       else
         this.summaries.splice(index,0,summary);
       this.DOM.root.attr("hasSummaries",true);
-      this.updateWidth_QueryPreview();
+      this.updateWidth_MeasureLabel();
       this.refreshAdjustWidth();
     } else { // summary was in the panel. Change position
       this.summaries.splice(curIndex,1);
@@ -2753,7 +2766,7 @@ kshf.Panel.prototype = {
     if(this.summaries.length===0) {
       this.DOM.root.attr("hasSummaries",false);
     } else {
-      this.updateWidth_QueryPreview();
+      this.updateWidth_MeasureLabel();
     }
     summary.panel = undefined;
     this.refreshAdjustWidth();
@@ -2884,7 +2897,7 @@ kshf.Panel.prototype = {
   },
   /** -- */
   setTotalWidth: function(_w_){
-    this.width_catBars = _w_-this.width_catLabel-this.width_catMeasureLabel-kshf.scrollWidth;
+    this.width_catBars = _w_ - this.width_catLabel - this.width_catMeasureLabel - kshf.scrollWidth;
   },
   /** -- */
   collapseAllSummaries: function(exceptThisOne){
@@ -2919,30 +2932,46 @@ kshf.Panel.prototype = {
     this.summaries.forEach(function(summary){ summary.refreshWidth(); });
   },
   /** --- */
-  updateWidth_QueryPreview: function(){
+  updateWidth_MeasureLabel: function(){
     var maxTotalCount = d3.max(this.summaries, function(summary){
+      if(summary.type!=="categorical") return 0; // only align categorical summaries
       if(summary.getMaxAggr_Total===undefined) return 0;
       return summary.getMaxAggr_Total();
     });
 
-    var oldPreviewWidth = this.width_catMeasureLabel;
+    if(maxTotalCount===0){
+      this.width_catMeasureLabel = 0;
+      return;
+    }
+
+    var _w_total_ = this.getWidth_Total();
+
+    var width_old = this.width_catMeasureLabel;
 
     this.width_catMeasureLabel = 10;
+    // compute number of digits
     var digits = 1;
-    while(maxTotalCount>9){
-      digits++;
-      maxTotalCount = Math.floor(maxTotalCount/10);
-    }
-    if(digits>3) {
+    while(maxTotalCount>9){ digits++; maxTotalCount = Math.floor(maxTotalCount/10); }
+    if(digits>3){
       digits = 2;
       this.width_catMeasureLabel+=4; // "." character is used to split. It takes some space
     }
     this.width_catMeasureLabel += digits*6;
 
-    if(oldPreviewWidth!==this.width_catMeasureLabel){
+    // TODO: Account for the unitName displayed
+    if(this.browser.measureFunc!=="Count" && this.browser.measureSummary){
+      if(this.browser.measureSummary.unitName){
+        // TODO: Use the rendered width, instead of 7
+        var unitNameWidth = 2 + this.browser.measureSummary.unitName.length*7;
+        this.width_catMeasureLabel += unitNameWidth;
+      }
+    }
+
+    if(width_old!==this.width_catMeasureLabel){
       this.summaries.forEach(function(summary){
         if(summary.refreshLabelWidth) summary.refreshLabelWidth();
       });
+      this.setWidthCatBars( _w_total_ - this.width_catLabel - this.width_catMeasureLabel - kshf.scrollWidth );
     }
   },
 };
@@ -2971,6 +3000,8 @@ kshf.Browser = function(options){
   this.isFullscreen = false;
 
   this.showDropZones = false;
+  this.asyncDataLoadedCnt = 0;
+  this.asyncDataWaitedCnt = 0;
 
   this.mapColorTheme = "converge";
   this.measureFunc = "Count";
@@ -2995,22 +3026,21 @@ kshf.Browser = function(options){
     Compare_C: null,
   }
 
+  this.highlightSelectedSummary = null;
+  this.highlightCrumbTimeout_Hide = undefined;
+
   this.crumb_Highlight = new kshf.BreadCrumb(this,"Highlight");
   this.crumb_Compare_A = new kshf.BreadCrumb(this,"Compare_A");
   this.crumb_Compare_B = new kshf.BreadCrumb(this,"Compare_B");
   this.crumb_Compare_C = new kshf.BreadCrumb(this,"Compare_C");
 
-  this.highlightSelectedSummary = null;
-  this.highlightCrumbTimeout_Hide = undefined;
-
-
-  this.allRecordsAggr = new kshf.Aggregate();
-  this.allRecordsAggr.init();
-
+  this.allRecordsAggr     = new kshf.Aggregate();
   this.flexAggr_Highlight = new kshf.Aggregate();
   this.flexAggr_Compare_A = new kshf.Aggregate();
   this.flexAggr_Compare_B = new kshf.Aggregate();
   this.flexAggr_Compare_C = new kshf.Aggregate();
+
+  this.allRecordsAggr    .init();
   this.flexAggr_Highlight.init();
   this.flexAggr_Compare_A.init();
   this.flexAggr_Compare_B.init();
@@ -3043,8 +3073,8 @@ kshf.Browser = function(options){
     .classed("kshf",true)
     .attr("noanim",true)
     .attr("measureFunc",this.measureFunc)
-    .style("position","relative")
     .attr("pointerEvents",true)
+    .style("position","relative")
     .on("mousemove",function(d,e){
       // Compute mouse moving speed, to adjust repsonsiveness
       if(me.lastMouseMoveEvent===undefined){
@@ -3284,7 +3314,7 @@ kshf.Browser.prototype = {
           && summary.scaleType!=='time' 
           // && summary.panel!==undefined
           && summary.intervalRange.total
-          && summary.intervalRange.total.min>=0
+          //&& summary.intervalRange.total.min>=0
           && summary.summaryName !== this.records[0].idIndex
           ;
       },this);
@@ -3294,14 +3324,14 @@ kshf.Browser.prototype = {
       var me=this;
       if(this.DOM.measureSelectBox) return;
       this.DOM.measureSelectBox = this.DOM.measureSelectBox_Wrapper.append("div").attr("class","measureSelectBox")
-        .style("left","0px")
-        .style("top","0px");
+        .style({ left: "0px", top: "0px" });
       this.DOM.measureSelectBox.append("div").attr("class","measureSelectBox_Close fa fa-times-circle")
         .each(function(d){ this.tipsy = new Tipsy(this, { gravity: 'e', title: kshf.lang.cur.Close }); })
-        .on("mouseover",function(){ this.tipsy.show(); })
-        .on("mouseout", function(){ this.tipsy.hide(); })
-        .on("click",function(){ this.tipsy.hide(); me.closeMeasureSelectBox(); });
-      this.DOM.measureSelectBox.append("div").attr("class","measureSelectBox_Header").text("Choose measure")
+        .on("mouseenter", function(){ this.tipsy.show(); })
+        .on("mouseleave", function(){ this.tipsy.hide(); })
+        .on("click",      function(){ this.tipsy.hide(); me.closeMeasureSelectBox(); });
+      this.DOM.measureSelectBox.append("div").attr("class","measureSelectBox_Header")
+        .text("Choose measure-metric")
         .on("mousedown", function (d, i) {
           me.DOM.root.attr("pointerEvents",false);
 
@@ -3373,7 +3403,7 @@ kshf.Browser.prototype = {
     },
     /** -- */
     refreshMeasureSelectAction: function(){
-      this.DOM.recordInfo.attr('changeMeasureBox', (this.getMeasurableSummaries().length!==0)? 'true' : null);
+      this.DOM.measureFuncSelect.attr('changeMeasureBox', (this.getMeasurableSummaries().length!==0)? 'true' : null);
     },
     /** -- */
     insertDOM_PanelBasic: function(){
@@ -3383,18 +3413,16 @@ kshf.Browser.prototype = {
 
       this.DOM.measureSelectBox_Wrapper = this.DOM.panel_Basic.append("span").attr("class","measureSelectBox_Wrapper")
         .attr("showMeasureBox",false);
-      
-      this.DOM.recordInfo = this.DOM.panel_Basic.append("span")
-        .attr("class","recordInfo")
-        .attr("edittitle",false)
-        .each(function(){ this.tipsy = new Tipsy(this, { gravity: 'n', title: "Change measure" }); })
+
+      this.DOM.measureFuncSelect = this.DOM.panel_Basic.append("span")
+        .attr("class","measureFuncSelect fa fa-cubes")
+        .each(function(){ this.tipsy = new Tipsy(this, { gravity: 'nw', title: kshf.lang.cur.ChangeMeasureFunc }); })
         .on("mouseenter",function(){
           if(me.authoringMode || me.getMeasurableSummaries().length===0) return;
           this.tipsy.show(); 
         })
         .on("mouseleave",function(){ this.tipsy.hide(); })
         .on("click",function(){
-          if(me.authoringMode || me.getMeasurableSummaries().length===0) return;
           this.tipsy.hide();
           if(me.DOM.measureSelectBox) {
             me.closeMeasureSelectBox();
@@ -3403,10 +3431,13 @@ kshf.Browser.prototype = {
           me.insertDOM_measureSelect();
           me.DOM.measureSelectBox_Wrapper.attr("showMeasureBox",true);
         });
+      
+      this.DOM.recordInfo = this.DOM.panel_Basic.append("span")
+        .attr("class","recordInfo")
+        .attr("edittitle",false);
 
       this.DOM.activeRecordMeasure = this.DOM.recordInfo.append("span").attr("class","activeRecordMeasure");
-
-      this.DOM.measureFuncType = this.DOM.recordInfo.append("span").attr("class","measureFuncType");
+      this.DOM.measureFuncType     = this.DOM.recordInfo.append("span").attr("class","measureFuncType");
 
       this.DOM.recordName = this.DOM.recordInfo.append("span").attr("class","recordName editableText")
         .each(function(){
@@ -3465,10 +3496,7 @@ kshf.Browser.prototype = {
         .each(function(){ this.tipsy = new Tipsy(this, { gravity: 'n', title: kshf.lang.cur.SaveSelection }); })
         .on("mouseenter",function(){ this.tipsy.show(); })
         .on("mouseleave",function(){ this.tipsy.hide(); })
-        .on("click",function(){
-          this.tipsy.hide();
-          me.saveFilterSelection();
-        });
+        .on("click",     function(){ this.tipsy.hide(); me.saveFilterSelection(); });
 
       this.initDOM_ClearAllFilters();
 
@@ -3477,8 +3505,8 @@ kshf.Browser.prototype = {
       if (typeof saveAs !== 'undefined') { // FileSaver.js is included
         rightBoxes.append("i").attr("class","saveBrowserConfig fa fa-download")
           .each(function(d){ this.tipsy = new Tipsy(this, { gravity: 'ne', title: "Download Browser Configuration" }); })
-          .on("mouseover",function(){ this.tipsy.show(); })
-          .on("mouseout", function(){ this.tipsy.hide(); })
+          .on("mouseenter", function(){ this.tipsy.show(); })
+          .on("mouseleave", function(){ this.tipsy.hide(); })
           .on("click",function(){ 
             var c = JSON.stringify(me.exportConfig(),null,'  ');
             var blob = new Blob([c]);//, {type: "text/plain;charset=utf-8"});
@@ -3556,12 +3584,11 @@ kshf.Browser.prototype = {
           }
 
           function gist_createNew(){
-            $.ajax( 'https://api.github.com/gists',
-              { method: "POST",
-                dataType: 'json',
-                data: JSON.stringify(githubLoad),
-                headers: headers,
-                success: function(response){
+            var xhr = d3.xhr('https://api.github.com/gists');
+            if(kshf.gistLogin) xhr.header("Authorization","token "+kshf.githubToken);
+            xhr.post( JSON.stringify(githubLoad), // data
+                function(error, data){ 
+                  var response = JSON.parse(data.response);
                   // Keep Gist Info (you may edit/fork it next)
                   kshf.gistInfo = response;
                   var gistURL = response.html_url;
@@ -3571,12 +3598,26 @@ kshf.Browser.prototype = {
                     "The browser is saved to "+
                     "<a href='"+gistURL+"' target='_blank'>"+gistURL.replace("https://","")+"</a>.<br> "+
                     "To load it again, visit <a href='http://"+keshifGist+"' target='_blank'>"+keshifGist+"</a>"
-                    )
-                },
-              },
-              'json'
-            );
+                    );
+                });
           };
+          function gist_sendEdit(){
+            var xhr = d3.xhr('https://api.github.com/gists/'+kshf.gistInfo.id);
+            if(kshf.gistLogin) xhr.header("Authorization","token "+kshf.githubToken);
+            xhr.send('PATCH',JSON.stringify(githubLoad),
+              function(error, data){ 
+                var response = data.response;
+                var gistURL = response.html_url;
+                var gistID = gistURL.replace(/.*github.*\//g,'');
+                var keshifGist = "keshif.me/gist?"+gistID;
+                me.showWarning(
+                  "The browser is edited in "+
+                  "<a href='"+gistURL+"' target='_blank'>"+gistURL.replace("https://","")+"</a>.<br> "+
+                  "To load it again, visit <a href='http://"+keshifGist+"' target='_blank'>"+keshifGist+"</a>"
+                  );
+              });
+          };
+
 
           // UNAUTHORIZED / ANONYMOUS
           if(kshf.gistLogin===undefined){
@@ -3594,83 +3635,58 @@ kshf.Browser.prototype = {
           // AUTHOIZED, EXISTING GIST, FROM ANOTHER USER
           if(kshf.gistInfo.owner===undefined || kshf.gistInfo.owner.login !== kshf.gistLogin){
             // Fork it
-            $.ajax( 'https://api.github.com/gists/'+kshf.gistInfo.id+"/forks", 
-              { method: "POST",
-                dataType: 'json',
-                data: JSON.stringify(githubLoad),
-                async: false,
-                headers: headers,
-                success: function(response){
-                  kshf.gistInfo = response; // ok, now my gist
-                },
-              },
-              'json'
-            );
-          }
-
-          // AUTHORIZED, EXISTING GIST, MY GIST
-          if(kshf.gistInfo.owner.login === kshf.gistLogin){
-            // edit
-            $.ajax( 'https://api.github.com/gists/'+kshf.gistInfo.id, 
-              { method: "PATCH",
-                dataType: 'json',
-                data: JSON.stringify(githubLoad),
-                headers: headers,
-                success: function(response){
-                  var gistURL = response.html_url;
-                  var gistID = gistURL.replace(/.*github.*\//g,'');
-                  var keshifGist = "keshif.me/gist?"+gistID;
-                  me.showWarning(
-                    "The browser is edited in "+
-                    "<a href='"+gistURL+"' target='_blank'>"+gistURL.replace("https://","")+"</a>.<br> "+
-                    "To load it again, visit <a href='http://"+keshifGist+"' target='_blank'>"+keshifGist+"</a>"
-                    )
-                },
-              },
-              'json'
-            );
+            var xhr = d3.xhr('https://api.github.com/gists'+kshf.gistInfo.id+"/forks");
+            if(kshf.gistLogin) xhr.header("Authorization","token "+kshf.githubToken);
+            xhr.post( JSON.stringify(githubLoad), // data
+                function(error, data){ 
+                  kshf.gistInfo = JSON.parse(data.response); // ok, now my gist
+                  gist_sendEdit();
+                });
+          } else{
+            // AUTHORIZED, EXISTING GIST, MY GIST
+            if(kshf.gistInfo.owner.login === kshf.gistLogin){
+              gist_sendEdit();
+            }
           }
         });
 
       // Authoring
-      rightBoxes.append("span").attr("class","showConfigButton fa fa-cog")
+      this.DOM.authorButton = rightBoxes.append("span").attr("class","authorButton fa fa-cog")
         .each(function(){ this.tipsy = new Tipsy(this, { gravity: 'n', title: kshf.lang.cur.ModifyBrowser }); })
-        .on("mouseover", function(){ this.tipsy.show(); })
-        .on("mouseout" , function(){ this.tipsy.hide(); })
-        .on("click",     function(){ this.tipsy.hide(); me.enableAuthoring(); });
+        .on("mouseenter", function(){ this.tipsy.show(); })
+        .on("mouseleave", function(){ this.tipsy.hide(); })
+        .on("click",      function(){ this.tipsy.hide(); me.enableAuthoring(); });
       // Datasource
       this.DOM.datasource = rightBoxes.append("a").attr("class","fa fa-table datasource")
         .attr("target","_blank")
         .each(function(){ this.tipsy = new Tipsy(this, { gravity: 'n', title: kshf.lang.cur.OpenDataSource }); })
-        .on("mouseover",function(){ this.tipsy.show(); })
-        .on("mouseout", function(){ this.tipsy.hide(); });
+        .on("mouseenter", function(){ this.tipsy.show(); })
+        .on("mouseleave", function(){ this.tipsy.hide(); });
       // Help
-      rightBoxes.append("span").attr("class","fa fa-question-circle")
+      this.DOM.showHelpIn = rightBoxes.append("span").attr("class","showHelpIn fa fa-question-circle")
         .each(function(d){ this.tipsy = new Tipsy(this, { gravity: 'n', title: kshf.lang.cur.Help }); })
-        .on("mouseover",function(){ this.tipsy.show(); })
-        .on("mouseout", function(){ this.tipsy.hide(); })
-        .on("click",function(){
-          this.tipsy.hide();
-          if(typeof helpin !== 'undefined'){
-            me.panel_overlay.attr("show","help");
-            helpin.initDOM();
-          } else {
-            alert("We are working on to provide better help to your exploration. Check again soon!");
-          }
+        .on("mouseenter", function(){ this.tipsy.show(); })
+        .on("mouseleave", function(){ this.tipsy.hide(); })
+        .on("click",      function(){ this.tipsy.hide();
+          if(typeof helpin !== 'undefined') helpin.initDOM(); else alert("We are working on offering you the best help soon.");
         });
+
       // Fullscreen
-      rightBoxes.append("span").attr("class","fa fa-arrows-alt fullscreen")
+      this.DOM.viewFullscreen = rightBoxes.append("span").attr("class","fa fa-arrows-alt viewFullscreen")
         .each(function(){ this.tipsy = new Tipsy(this, { gravity: 'ne', title: kshf.lang.cur.ShowFullscreen }); })
-        .on("mouseover",function(){ this.tipsy.show(); })
-        .on("mouseout", function(){ this.tipsy.hide(); })
-        .on("click",    function(){ this.tipsy.hide(); me.showFullscreen();});
+        .on("mouseenter", function(){ this.tipsy.show(); })
+        .on("mouseleave", function(){ this.tipsy.hide(); })
+        .on("click",      function(){ this.tipsy.hide(); me.showFullscreen();});
       // Info & Credits
       var x = rightBoxes.append("span").attr("class","logoHost")//.attr("class","fa fa-info-circle")
+        .html(kshf.kshfLogo)
         .each(function(){ this.tipsy = new Tipsy(this, { gravity: 'ne', title: kshf.lang.cur.ShowInfoCredits }); })
-        .on("mouseover",function(){ this.tipsy.show(); })
-        .on("mouseout", function(){ this.tipsy.hide(); })
-        .on("click",    function(){ this.tipsy.hide(); me.panel_overlay.attr("show","infobox"); })
-        .html(kshf.kshfLogo);
+        .on("mouseenter", function(){ this.tipsy.show(); })
+        .on("mouseleave", function(){ this.tipsy.hide(); })
+        .on("click",      function(){ this.tipsy.hide(); 
+          me.showCredits();
+          me.panel_overlay.attr("show","infobox");
+        });
 
       // Total glyph - row
       var adsdasda = this.DOM.panel_Basic.append("div").attr("class","totalGlyph aggrGlyph");
@@ -3713,66 +3729,21 @@ kshf.Browser.prototype = {
         .each(function(){ this.tipsy = new Tipsy(this, { gravity: 'n', title: kshf.lang.cur.RemoveAllFilters }); })
         .on("mouseenter",function(){ this.tipsy.show(); })
         .on("mouseleave",function(){ this.tipsy.hide(); })
-        .on("click",function(){
-          this.tipsy.hide();
-          me.clearFilters_All();
-        });
-      this.DOM.filterClearAll.append("span").attr("class","title").text(kshf.lang.cur.ShowAll);
-      this.DOM.filterClearAll.append("div").attr("class","clearFilterButton allFilter")
-        .append("span").attr("class","fa fa-times");
+        .on("click",     function(){ this.tipsy.hide(); me.clearFilters_All(); });
+      this.DOM.filterClearAll.append("span").attr("class","title").html(
+        "<i class='fa fa-filter' style='vertical-align: top'></i> "+kshf.lang.cur.ShowAll);
     },
     /* -- */
     insertDOM_Infobox: function(){
         var me=this;
-        var creditString="";
-        creditString += "<div class='infobox-header'><a target='_blank' href='http://www.keshif.me' class='libName'>";
-        creditString += kshf.kshfLogo;
 
-        creditString += " Keshif</a> - Data Made Explorable</div>";
-
-        creditString += "<div class='boxinbox' style='padding: 0px 15px'>";
-        creditString += " <a href='http://hcil.umd.edu/' target='_blank'>"+
-          "<img src='http://www.keshif.me/AggreSet/img/logo_hcil.gif' style='height:50px; float: left'></a>";
-        creditString += " <a href='http://www.umd.edu' target='_blank'>"+
-          "<img src='http://www.keshif.me/AggreSet/img/logo_umd.png' style='height:50px; float: right'></a>";
-        creditString += "Designed &amp; developed by: ";
-        creditString += " <a class='myName' href='http://www.adilyalcin.me' target='_blank'>M. Adil Yalçın</a><br>";
-        creditString += "Advised by: <br>";
-        creditString += " <a class='advName' href='https://sites.umiacs.umd.edu/elm/' target='_blank'>Niklas Elmqvist</a> &amp; ";
-        creditString += " <a class='advName' href='http://www.cs.umd.edu/~bederson/' target='_blank'>Ben Bederson</a> <br>";
-        creditString += "</div>";
-
-        creditString += "<div class='boxinbox'>";
-            creditString += "<div style='float:right;'>"
-            creditString += "<iframe src='http://ghbtns.com/github-btn.html?user=adilyalcin&repo=Keshif&type=watch&count=true' "+
-              "allowtransparency='true' frameborder='0' scrolling='0' width='90px' height='20px'></iframe><br/>";
-            creditString += "</div>";
-            creditString += "<div style='float:left; padding-left: 10px'>"
-            creditString += "<iframe src='http://ghbtns.com/github-btn.html?user=adilyalcin&repo=Keshif&type=fork&count=true' "+
-              "allowtransparency='true' frameborder='0' scrolling='0' width='90px' height='20px'></iframe>";
-            creditString += "</div>";
-        creditString += " <span style='font-size: 0.7em'> 3rd party libraries:";
-        creditString += " <a style='color:black;' href='http://d3js.org/' target='_blank'>D3</a>, ";
-        creditString += " <a style='color:black;' href='http://jquery.com' target='_blank'>JQuery</a>, ";
-        creditString += " <a style='color:black;' href='https://developers.google.com/chart/' target='_blank'>GoogleDocs</a></span>";
-        creditString += "</div>";
-
-        creditString += "<div class='project_fund'><b>Keşif</b> (Turkish): Discovery &amp; exploration</div>";
-
-        this.panel_overlay = this.DOM.root.append("div").attr("class", "panel panel_overlay");
+        this.panel_overlay = this.DOM.root.append("div").attr("class", "panel_overlay");
 
         // BACKGROUND 
-        this.panel_overlay.append("div").attr("class","background")
+        this.DOM.kshfBackground = this.panel_overlay.append("div").attr("class","kshfBackground")
           .on("click",function(){
             var activePanel = this.parentNode.getAttribute("show");
-            if(activePanel==="answer"){
-              me.panel_overlay.select(".overlay_help").attr("attention",true);
-              me.panel_overlay.select(".overlay_answer").attr("attention",true);
-              setTimeout(function(){ 
-                me.panel_overlay.select(".overlay_help").attr("attention",false);
-                me.panel_overlay.select(".overlay_answer").attr("attention",false);
-              }, 1200);
-            } else if(activePanel!=="loading" && activePanel!=="none" && activePanel !== "source"){
+            if(activePanel==="recordDetails" || activePanel==="infobox" || activePanel==="help-browse"){
               me.panel_overlay.attr("show","none");
             }
           });
@@ -3787,13 +3758,12 @@ kshf.Browser.prototype = {
         this.DOM.status_text_sub_dynamic = hmmm.append("span").attr("class","status_text_sub dynamic");
 
         // CREDITS 
-        var overlay_infobox = this.panel_overlay.append("div").attr("class","overlay_content overlay_infobox");
-        overlay_infobox.append("div").attr("class","overlay_Close fa fa-times fa-times-circle")
+        this.DOM.overlay_infobox = this.panel_overlay.append("div").attr("class","overlay_content overlay_infobox");
+        this.DOM.overlay_infobox.append("div").attr("class","overlay_Close fa fa-times fa-times-circle")
           .each(function(){ this.tipsy = new Tipsy(this, { gravity: 'ne', title: kshf.lang.cur.Close }); })
           .on("mouseenter",function(){ this.tipsy.show(); })
           .on("mouseleave",function(){ this.tipsy.hide(); })
           .on("click",function(){ this.tipsy.hide(); me.panel_overlay.attr("show","none"); });
-        overlay_infobox.append("div").html(creditString);
 
         this.insertSourceBox();
 
@@ -3808,8 +3778,47 @@ kshf.Browser.prototype = {
 
         // HELP
         this.panel_overlay.append("span").attr("class","overlay_content overlay_help");
-        // ANSWER
-        this.panel_overlay.append("span").attr("class","overlay_content overlay_answer");
+    },
+    /** -- */
+    showCredits: function(){
+      if(this.creditsInserted) return;
+      var creditString="";
+      creditString += "<div class='infobox-header'><a target='_blank' href='http://www.keshif.me' class='libName'>";
+      creditString += kshf.kshfLogo;
+
+      creditString += " Keshif</a> - Data Made Explorable</div>";
+
+      creditString += "<div class='boxinbox' style='padding: 0px 15px'>";
+      creditString += " <a href='http://hcil.umd.edu/' target='_blank'>"+
+        "<img src='http://www.keshif.me/AggreSet/img/logo_hcil.gif' style='height:50px; float: left'></a>";
+      creditString += " <a href='http://www.umd.edu' target='_blank'>"+
+        "<img src='http://www.keshif.me/AggreSet/img/logo_umd.png' style='height:50px; float: right'></a>";
+      creditString += "Designed &amp; developed by ";
+      creditString += " <a class='myName' href='http://www.adilyalcin.me' target='_blank'>M. Adil Yalçın</a><br><br>";
+      creditString += "Advised by";
+      creditString += " <a class='advName' href='https://sites.umiacs.umd.edu/elm/' target='_blank'>Niklas Elmqvist</a> &amp; ";
+      creditString += " <a class='advName' href='http://www.cs.umd.edu/~bederson/' target='_blank'>Ben Bederson</a> <br>";
+      creditString += "</div>";
+
+      creditString += "<div class='boxinbox'>";
+          creditString += "<div style='float:right;'>"
+          creditString += "<iframe src='http://ghbtns.com/github-btn.html?user=adilyalcin&repo=Keshif&type=watch&count=true' "+
+            "allowtransparency='true' frameborder='0' scrolling='0' width='90px' height='20px'></iframe><br/>";
+          creditString += "</div>";
+          creditString += "<div style='float:left; padding-left: 10px'>"
+          creditString += "<iframe src='http://ghbtns.com/github-btn.html?user=adilyalcin&repo=Keshif&type=fork&count=true' "+
+            "allowtransparency='true' frameborder='0' scrolling='0' width='90px' height='20px'></iframe>";
+          creditString += "</div>";
+      creditString += " <span style='font-size: 0.7em'> 3rd party libraries:";
+      creditString += " <a style='color:black;' href='http://d3js.org/' target='_blank'>D3</a>, ";
+      creditString += " <a style='color:black;' href='http://leafletjs.com/' target='_blank'>Leaflet</a>, ";
+//      creditString += " <a style='color:black;' href='http://jquery.com' target='_blank'>JQuery</a>, ";
+//      creditString += " <a style='color:black;' href='https://developers.google.com/chart/' target='_blank'>GoogleDocs</a></span>";
+      creditString += "</div>";
+
+      //creditString += "<div class='project_fund'><b>Keşif</b> (Turkish): Discovery &amp; exploration</div>";
+      this.DOM.overlay_infobox.append("div").attr("class","tempClass").html(creditString);
+      this.creditsInserted = true;
     },
     /** -- */
     insertSourceBox: function(){
@@ -3826,7 +3835,7 @@ kshf.Browser.prototype = {
         this.DOM.overlay_source = this.panel_overlay.append("div").attr("class","overlay_content overlay_source")
             .attr("selected_source_type",source_type);
 
-        this.DOM.overlay_source.append("div").attr("class","sourceHeader").text("Where's your data?")
+        this.DOM.overlay_source.append("div").attr("class","sourceHeader").text("Import your data")
           .append("span").attr("class","fa fa-info-circle")
             .each(function(summary){
               this.tipsy = new Tipsy(this, {
@@ -4056,6 +4065,13 @@ kshf.Browser.prototype = {
                 break;
             }
           });
+
+          this.DOM.overlay_source.append("div").attr("class","dataImportNotes").html(
+            "<i class='fa fa-file-text'></i> <a href='https://github.com/adilyalcin/Keshif/wiki/Docs:-Loading-Data' target='_blank'>"+
+              "Documentation for data sources and the programming interface</a><br>"+
+            "<i class='fa fa-file-text'></i> <a href='https://github.com/adilyalcin/Keshif/wiki/Guidelines-for-Data-Preparation' target='_blank'>"+
+              "Guidelines for Data Preparation</a>"
+            );    
     },
     /** -- */
     insertDOM_AttributePanel: function(){
@@ -4067,11 +4083,9 @@ kshf.Browser.prototype = {
       xx.append("span").text("Available Summaries");
       xx.append("span").attr("class","hidePanel fa fa-times")
         .each(function(){ this.tipsy = new Tipsy(this, { gravity: "w", title: "Close panel" }); })
-        .on("mouseover",function(){ this.tipsy.show(); })
-        .on("mouseout" ,function(){ this.tipsy.hide(); })
-        .on("click",function(){
-          me.enableAuthoring();
-        });
+        .on("mouseenter", function(){ this.tipsy.show(); })
+        .on("mouseleave", function(){ this.tipsy.hide(); })
+        .on("click",      function(){ this.tipsy.hide(); me.enableAuthoring(); });
 
       var attributePanelControl = this.DOM.attributePanel.append("div").attr("class","attributePanelControl");
 
@@ -4111,9 +4125,9 @@ kshf.Browser.prototype = {
       attributePanelControl.append("span").attr("class","addAllSummaries")
         .append("span").attr("class","fa fa-magic") // fa-caret-square-o-right
           .each(function(){ this.tipsy = new Tipsy(this, { gravity: "e", title: "Add all to browser" }); })
-          .on("mouseover",function(){ this.tipsy.show(); })
-          .on("mouseout" ,function(){ this.tipsy.hide(); })
-          .on("click",function(){ me.autoCreateBrowser(); });
+          .on("mouseenter", function(){ this.tipsy.show(); })
+          .on("mouseleave", function(){ this.tipsy.hide(); })
+          .on("click",      function(){ this.tipsy.hide(); me.autoCreateBrowser(); });
 
       this.DOM.attributeList = this.DOM.attributePanel.append("div").attr("class","attributeList");
 
@@ -4223,10 +4237,12 @@ kshf.Browser.prototype = {
     loadSource: function(v){
       this.source = v;
       this.panel_overlay.attr("show","loading");
+      
       // Compability with older versions.. Used to specify "sheets" instead of "tables"
       if(this.source.sheets){
-          this.source.tables = this.source.sheets;
+        this.source.tables = this.source.sheets;
       }
+
       if(this.source.tables){
         if(!Array.isArray(this.source.tables)) this.source.tables = [this.source.tables];
 
@@ -4262,9 +4278,10 @@ kshf.Browser.prototype = {
           }
         },this);
       } else {
-        if(this.source.callback) this.source.callback(this);
+        if(this.source.callback) this.source.callback.call(this,this);
       }
     },
+    /** -- */
     loadTable_Google: function(sheet){
       var me=this;
       var headers = sheet.headers ? sheet.headers : 1;
@@ -4369,15 +4386,13 @@ kshf.Browser.prototype = {
             this.source.dirPath+tableDescr.name+"."+this.source.fileType,
             config);
         } else {
-          $.ajax({
-            url: this.source.dirPath+tableDescr.name+"."+this.source.fileType,
-            type: "GET",
-            async: (this.source.callback===undefined)?true:false,
-            contentType: "text/csv",
-            success: function(data){
-              Papa.parse(data,config);
-            }
-          });
+          if(me.source.callback) me.asyncDataWaitedCnt++;
+          // TODO: If callback is defined, perform a SYNC request...
+          d3.xhr(this.source.dirPath+tableDescr.name+"."+this.source.fileType)
+            .get(function(error, data){ 
+              Papa.parse(data.response,config);
+              if(me.source.callback) me.asyncDataLoaded();
+            });
         }
       }
     },
@@ -4413,13 +4428,15 @@ kshf.Browser.prototype = {
         reader.onload = function(e) { processJSONText( JSON.parse(e.target.result)); };
         reader.readAsText(tableDescr);
       } else {
-        $.ajax({
-          url: this.source.dirPath+tableDescr.name+".json?dl=0",
-          type: "GET",
-          async: (this.source.callback===undefined)?true:false,
-          dataType: "json",
-          success: processJSONText
-        });
+        if(me.source.callback) me.asyncDataWaitedCnt++;
+        d3.xhr(this.source.dirPath+tableDescr.name+".json?dl=0")
+          .get(function(error, data){ 
+            try { 
+              processJSONText(JSON.parse(data.response)); 
+              if(me.source.callback) me.asyncDataLoaded();
+            }
+            catch (e) { alert("JSON Data could not be loaded/parsed correctly."); }
+          });
       }
     },
     /** -- */
@@ -4439,10 +4456,17 @@ kshf.Browser.prototype = {
 
       if(this.source.loadedTableCount===this.source.tables.length) {
         if(this.source.callback){
-          this.source.callback(this);
+          this.source.callback.call(this,this);
         } else {
           this.loadCharts();
         }
+      }
+    },
+    /** -- */
+    asyncDataLoaded: function(){
+      this.asyncDataLoadedCnt++;
+      if(this.asyncDataWaitedCnt===this.asyncDataLoadedCnt){
+        this.loadCharts();
       }
     },
     /** -- */
@@ -4511,7 +4535,7 @@ kshf.Browser.prototype = {
           }
 
           if( facetDescr.catLabel || facetDescr.catTooltip || facetDescr.catSplit ||
-              facetDescr.catTableName || facetDescr.catSortBy || facetDescr.catMap){
+              facetDescr.catTableName || facetDescr.catSortBy || facetDescr.catMap || facetDescr.catHeight){
             facetDescr.type="categorical";
           } else if(facetDescr.scaleType || facetDescr.showPercentile || facetDescr.unitName || facetDescr.timeFormat ){
             facetDescr.type="interval";
@@ -4591,6 +4615,9 @@ kshf.Browser.prototype = {
             if(facetDescr.catMap){
               summary.setCatGeo(facetDescr.catMap);
             }
+            if(facetDescr.catHeight){
+              summary.setHeight_Category(facetDescr.catHeight);
+            }
             if(facetDescr.minAggrValue) {
               summary.setMinAggrValue(facetDescr.minAggrValue);
             }
@@ -4609,7 +4636,7 @@ kshf.Browser.prototype = {
           }
 
           if(summary.type==='interval'){
-            summary.unitName = facetDescr.unitName || summary.unitName;
+            if(typeof facetDescr.unitName === "string") summary.setUnitName(facetDescr.unitName);
             if(facetDescr.showPercentile) {
               summary.showPercentileChart(facetDescr.showPercentile);
             }
@@ -4627,15 +4654,14 @@ kshf.Browser.prototype = {
           }
         },this);
 
-        this.panels.left.updateWidth_QueryPreview();
-        this.panels.right.updateWidth_QueryPreview();
-        this.panels.middle.updateWidth_QueryPreview();
+        this.panels.left.updateWidth_MeasureLabel();
+        this.panels.right.updateWidth_MeasureLabel();
+        this.panels.middle.updateWidth_MeasureLabel();
 
         this.recordDisplay = new kshf.RecordDisplay(this,this.options.recordDisplay||{});
 
         if(this.options.measure){
-          var summary = this.summaries_by_name[this.options.measure];
-          this.setMeasureFunction(summary,"Sum");
+          this.setMeasureFunction(this.summaries_by_name[this.options.measure],"Sum");
         }
 
         this.DOM.recordName.html(this.recordName);
@@ -4649,21 +4675,21 @@ kshf.Browser.prototype = {
         this.loaded = true;
 
         var x = function(){
-            var totalWidth = this.divWidth;
-            var colCount = 0;
-            if(this.panels.left.summaries.length>0){
-                totalWidth-=this.panels.left.width_catLabel+kshf.scrollWidth+this.panels.left.width_catMeasureLabel;
-                colCount++;
-            }
-            if(this.panels.right.summaries.length>0){
-                totalWidth-=this.panels.right.width_catLabel+kshf.scrollWidth+this.panels.right.width_catMeasureLabel;
-                colCount++;
-            }
-            if(this.panels.middle.summaries.length>0){
-                totalWidth-=this.panels.middle.width_catLabel+kshf.scrollWidth+this.panels.middle.width_catMeasureLabel;
-                colCount++;
-            }
-            return Math.floor((totalWidth)/8);
+          var totalWidth = this.divWidth;
+          var colCount = 0;
+          if(this.panels.left.summaries.length>0){
+            totalWidth-=this.panels.left.width_catLabel+kshf.scrollWidth+this.panels.left.width_catMeasureLabel;
+            colCount++;
+          }
+          if(this.panels.right.summaries.length>0){
+            totalWidth-=this.panels.right.width_catLabel+kshf.scrollWidth+this.panels.right.width_catMeasureLabel;
+            colCount++;
+          }
+          if(this.panels.middle.summaries.length>0){
+            totalWidth-=this.panels.middle.width_catLabel+kshf.scrollWidth+this.panels.middle.width_catMeasureLabel;
+            colCount++;
+          }
+          return Math.floor((totalWidth)/8);
         };
         var defaultBarChartWidth = x.call(this);
 
@@ -4709,10 +4735,10 @@ kshf.Browser.prototype = {
     /** -- */
     unregisterBodyCallbacks: function(){
       // TODO: Revert to previous handlers...
-      d3.select("body").style('cursor','auto')
+      d3.select("body")
         .on("mousemove",null)
         .on("mouseup",null)
-        .on("keydown",null);
+        .on("keydown.layout",null);
     },
     /** -- */
     prepareDropZones: function(summary,source){
@@ -4793,8 +4819,7 @@ kshf.Browser.prototype = {
       var longName = "";
       this.filters.forEach(function(filter){
         if(!filter.isFiltered) return;
-        longName+="<b>"+filter.summary.summaryName+"</b>: "
-          + filter.summary.summaryFilter.filterView_Detail.call(filter.summary.summaryFilter)+" ";
+        longName+=filter.getRichText();
       });
 
       var aggr = new kshf.Aggregate();
@@ -4829,7 +4854,6 @@ kshf.Browser.prototype = {
       }
       if(summary.setSummary){
         // TODO: Adjust set summary based on the new aggregate (category)
-
       }
 
       summary.catTable_id[aggr.id()] = aggr;
@@ -4848,6 +4872,9 @@ kshf.Browser.prototype = {
       summary.updateCatSorting(0,true,true);
       summary.refreshLabelWidth();
       summary.refreshViz_Nugget();
+
+      summary.panel.updateWidth_MeasureLabel();
+      summary.panel.refreshAdjustWidth();
 
       this.updateLayout_Height();
     },
@@ -4872,13 +4899,15 @@ kshf.Browser.prototype = {
       setTimeout( function(){ me.updateLayout_Height(); }, 1000); // update layout after 1.75 seconds
     },
     /** -- */
-    refresh_ActiveRecordCount: function(){
-      if(this.allRecordsAggr.recCnt.Active===0){
-        this.DOM.activeRecordMeasure.html("No"); return;
-      }
+    getGlobalActiveMeasure: function(){
+      if(this.allRecordsAggr.recCnt.Active===0) return "No";
       var numStr = this.allRecordsAggr.measure('Active').toLocaleString();
-      if(this.measureSummary) numStr = this.measureSummary.printWithUnitName(numStr);
-      this.DOM.activeRecordMeasure.html(numStr);
+      if(this.measureSummary) return this.measureSummary.printWithUnitName(numStr);
+      return numStr;
+    },
+    /** -- */
+    refresh_ActiveRecordCount: function(){
+      this.DOM.activeRecordMeasure.html(this.getGlobalActiveMeasure());
     },
     /** -- */
     update_Records_Wanted_Count: function(){
@@ -4888,7 +4917,7 @@ kshf.Browser.prototype = {
       this.refresh_ActiveRecordCount();
     },
     /** -- */
-    updateAfterFilter: function () {
+    updateAfterFilter: function(){
       kshf.browser = this;
       this.clearSelect_Compare('A',true);
       this.clearSelect_Compare('B',true);
@@ -4897,10 +4926,13 @@ kshf.Browser.prototype = {
       this.recordDisplay.updateAfterFilter();
     },
     /** -- */
+    isFiltered: function(){
+      return this.filters.filter(function(filter){ return filter.isFiltered; }).length > 0;
+    },
+    /** -- */
     refresh_filterClearAll: function(){
-      var x = this.filters.filter(function(filter){ return filter.isFiltered; });
-      this.DOM.filterClearAll.attr("active", x.length>0);
-      this.DOM.saveSelection.attr("active", x.length>0);
+      this.DOM.filterClearAll.attr("active", this.isFiltered());
+      this.DOM.saveSelection.attr("active", this.isFiltered());
     },
     /** Ratio mode is when glyphs scale to their max */
     setScaleMode: function(how){
@@ -5077,6 +5109,7 @@ kshf.Browser.prototype = {
         summary.initializeAggregates();
         this.records.forEach(function(record){ record.measure_Self = summary.getRecordValue(record); });
       }
+
       this.DOM.measureFuncType.html(this.getMeasureFuncTypeText());
 
       this.DOM.root.attr("measureFunc",this.measureFunc);
@@ -5090,6 +5123,12 @@ kshf.Browser.prototype = {
       this.allAggregates.forEach(function(aggr){ aggr.resetAggregateMeasures(); });
       this.summaries.forEach(function(summary){ summary.updateAfterFilter(); });
       this.update_Records_Wanted_Count();
+
+      // measure labels need to be updated in all cases, numbers might change, unit names may be added...
+      this.panels.left.updateWidth_MeasureLabel();
+      this.panels.right.updateWidth_MeasureLabel();
+      this.panels.middle.updateWidth_MeasureLabel();
+      this.panels.bottom.updateWidth_MeasureLabel();
     },
     /** -- */
     checkBrowserZoomLevel: function(){
@@ -5264,7 +5303,7 @@ kshf.Browser.prototype = {
 
       this.DOM.middleColumn.style("width",widthMiddlePanel+"px");
 
-      this.recordDisplay.refreshWidth(widthMiddlePanel);
+      if(this.recordDisplay) this.recordDisplay.refreshWidth(widthMiddlePanel);
     },
     /** -- */
     getTickLabel: function(_val){
@@ -5577,7 +5616,7 @@ kshf.Summary_Base.prototype = {
         var _this = this;
         me.attribMoved = false;
         d3.select("body")
-          .on("keydown", function(){
+          .on("keydown.layout", function(){
             if(event.keyCode===27){ // Escape key
               _this.removeAttribute("moved");
               me.browser.clearDropZones();
@@ -5787,215 +5826,201 @@ kshf.Summary_Base.prototype = {
   },
   /** -- */
   insertRoot: function(beforeDOM){
+    var me=this;
     this.DOM.root = this.panel.DOM.root.insert("div", function(){ return beforeDOM; });
     this.DOM.root
       .attr("class","kshfSummary")
-      .attr("summary_id",this.summaryID)
+      .attr("summary_id",this.summaryID) // can be used to customize a specific summary using CSS
       .attr("collapsed",this.collapsed)
       .attr("filtered",false)
-      .attr("showConfig",false);
+      .attr("showConfig",false)
+      .each(function(){ this.__data__ = me; });
   },
   /** -- */
   insertHeader: function(){
-      var me = this;
+    var me = this;
 
-      this.DOM.headerGroup = this.DOM.root.append("div").attr("class","headerGroup")
-        .on("mousedown", function(){
-          if(d3.event.which !== 1) return; // only respond to left-click
-          if(!me.browser.authoringMode) {
-            d3.event.preventDefault();
-            return;
-          }
-          var _this = this;
-          var _this_nextSibling = _this.parentNode.nextSibling;
-          var _this_previousSibling = _this.parentNode.previousSibling;
-          var moved = false;
-          d3.select("body")
-            .style('cursor','move')
-            .on("keydown", function(){
-              if(event.keyCode===27){ // ESP key
-                _this.style.opacity = null;
-                me.browser.clearDropZones();
-              }
-            })
-            .on("mousemove", function(){
-              if(!moved){
-                _this_nextSibling.style.display = "none";
-                _this_previousSibling.style.display = "none";
-                _this.parentNode.style.opacity = 0.5;
-                me.browser.prepareDropZones(me,"browser");
-                moved = true;
-              }
-              var mousePos = d3.mouse(me.browser.DOM.root[0][0]);
-              kshf.Util.setTransform(me.browser.DOM.attribDragBox[0][0],
-                "translate("+(mousePos[0]-20)+"px,"+(mousePos[1]+5)+"px)");
-              d3.event.stopPropagation();
-              d3.event.preventDefault();
-            })
-            .on("mouseup", function(){
-              // Mouse up on the body
+    this.DOM.headerGroup = this.DOM.root.append("div").attr("class","headerGroup")
+      .on("mousedown", function(){
+        if(d3.event.which !== 1) return; // only respond to left-click
+        if(!me.browser.authoringMode) {
+          d3.event.preventDefault();
+          return;
+        }
+        var _this = this;
+        var _this_nextSibling = _this.parentNode.nextSibling;
+        var _this_previousSibling = _this.parentNode.previousSibling;
+        var moved = false;
+        d3.select("body")
+          .style('cursor','move')
+          .on("keydown.layout", function(){
+            if(event.keyCode===27){ // ESP key
+              _this.style.opacity = null;
               me.browser.clearDropZones();
-              if(me.panel!==undefined || true) {
-                _this.parentNode.style.opacity = null;
-                _this_nextSibling.style.display = "";
-                _this_previousSibling.style.display = "";
-              }
-              d3.event.preventDefault();
-            });
-          d3.event.preventDefault();
-        });
-
-      var header_display_control = this.DOM.headerGroup.append("span").attr("class","header_display_control");
-
-      header_display_control.append("span").attr("class","buttonSummaryCollapse fa fa-collapse")
-          .each(function(){
-            this.tipsy = new Tipsy(this, {
-              gravity: function(){ return me.panelOrder!==0?'sw':'nw'; },
-              title: function(){ return me.collapsed?kshf.lang.cur.OpenSummary:kshf.lang.cur.MinimizeSummary; }
-            })
-          })
-          .on("mouseover",function(){ this.tipsy.show(); })
-          .on("mouseout" ,function(){ this.tipsy.hide(); })
-          .on("mousedown", function(){
-            d3.event.preventDefault();
-            d3.event.stopPropagation();
-          })
-          .on("click",function(){
-            this.tipsy.hide();
-            if(me instanceof kshf.Summary_Set){
-              me.setListSummary.setShowSetMatrix(false);
-            } else {
-              me.setCollapsedAndLayout(!me.collapsed);
             }
-          });
-
-      header_display_control.append("span").attr("class","buttonSummaryExpand fa fa-arrows-alt")
-        .each(function(){
-          this.tipsy = new Tipsy(this, {
-            gravity: function(){ return me.panelOrder!==0?'sw':'nw'; }, title: kshf.lang.cur.MaximizeSummary
-          });
-        })
-        .on("mouseover",function(){ this.tipsy.show(); })
-        .on("mouseout" ,function(){ this.tipsy.hide(); })
-        .on("mousedown", function(){
-          d3.event.preventDefault();
-          d3.event.stopPropagation();
-        })
-        .on("click",function(){
-          this.tipsy.hide();
-          me.panel.collapseAllSummaries(me);
-          me.browser.updateLayout_Height();
-        });
-
-      header_display_control.append("span").attr("class","buttonSummaryRemove fa fa-remove")
-        .each(function(){
-          this.tipsy = new Tipsy(this, {
-            gravity: function(){ return me.panelOrder!==0?'sw':'nw'; }, title: kshf.lang.cur.RemoveSummary
-          });
-        })
-        .on("mouseover",function(){ this.tipsy.show(); })
-        .on("mouseout" ,function(){ this.tipsy.hide(); })
-        .on("mousedown", function(){
-          d3.event.preventDefault();
-          d3.event.stopPropagation();
-        })
-        .on("click",function(){
-          this.tipsy.hide();
-          me.removeFromPanel();
-          me.clearDOM();
-          me.browser.updateLayout();
-        });
-
-      this.DOM.summaryName = this.DOM.headerGroup.append("span")
-        .attr("class","summaryName")
-        .attr("edittitle",false)
-        .on("click",function(){ if(me.collapsed) me.setCollapsedAndLayout(false); });
-
-      this.DOM.summaryName.append("span").attr("class","chartFilterButtonParent").append("div")
-          .attr("class","clearFilterButton rowFilter inSummary")
-          .each(function(d){
-            this.tipsy = new Tipsy(this, {
-              gravity: function(){ return me.panelOrder!==0?'s':'n'; },
-              title: kshf.lang.cur.RemoveFilter
-            });
           })
-          .on("mouseover",function(){ this.tipsy.show(); })
-          .on("mouseout" ,function(){ this.tipsy.hide(); })
-          .on("mousedown", function(){
-            d3.event.preventDefault();
+          .on("mousemove", function(){
+            if(!moved){
+              _this_nextSibling.style.display = "none";
+              _this_previousSibling.style.display = "none";
+              _this.parentNode.style.opacity = 0.5;
+              me.browser.prepareDropZones(me,"browser");
+              moved = true;
+            }
+            var mousePos = d3.mouse(me.browser.DOM.root[0][0]);
+            kshf.Util.setTransform(me.browser.DOM.attribDragBox[0][0],
+              "translate("+(mousePos[0]-20)+"px,"+(mousePos[1]+5)+"px)");
             d3.event.stopPropagation();
+            d3.event.preventDefault();
           })
-          .on("click", function(){
-            this.tipsy.hide();
-            me.summaryFilter.clearFilter();
-          })
-          .append("span").attr("class","fa fa-times");
+          .on("mouseup", function(){
+            // Mouse up on the body
+            me.browser.clearDropZones();
+            if(me.panel!==undefined || true) {
+              _this.parentNode.style.opacity = null;
+              _this_nextSibling.style.display = "";
+              _this_previousSibling.style.display = "";
+            }
+            d3.event.preventDefault();
+          });
+        d3.event.preventDefault();
+      });
 
-      this.DOM.summaryName_text = this.DOM.summaryName.append("span").attr("class","summaryName_text editableText")
-        .attr("contenteditable",false)
-        .each(function(summary){ this.tipsy = new Tipsy(this, { gravity: 'w', title: kshf.lang.cur.EditTitle }); })
-        .on("mouseover",function(){
-          if(!me.browser.authoringMode) return;
-          this.tipsy.show();
+    var header_display_control = this.DOM.headerGroup.append("span").attr("class","header_display_control");
+
+    this.DOM.buttonSummaryCollapse = header_display_control.append("span")
+      .attr("class","buttonSummaryCollapse fa fa-collapse")
+      .each(function(){
+        this.tipsy = new Tipsy(this, {
+          gravity: function(){ return me.panelOrder!==0?'sw':'nw'; },
+          title: function(){ return me.collapsed?kshf.lang.cur.OpenSummary:kshf.lang.cur.MinimizeSummary; }
         })
-        .on("mouseout" ,function(){ this.tipsy.hide(); })
-        .on("mousedown", function(){
-          // stop dragging event start
-          d3.event.stopPropagation();
-          d3.event.preventDefault();
-        })
-        .on("click", function(){
-          if(!me.browser.authoringMode) return;
-          var curState=this.parentNode.getAttribute("edittitle");
-          if(curState===null || curState==="false"){
-            this.parentNode.setAttribute("edittitle",true);
-            var parentDOM = d3.select(this.parentNode);
-            var v=parentDOM.select(".summaryName_text")[0][0];
-            v.setAttribute("contenteditable",true);
-            v.focus();
-          } else {
-            this.parentNode.setAttribute("edittitle",false);
-            var parentDOM = d3.select(this.parentNode);
-            var v=parentDOM.select(".summaryName_text")[0][0];
-            v.setAttribute("contenteditable",false);
-            me.browser.changeSummaryName(me.summaryName,v.textContent);
-          }
-        })
-        .on("blur",function(){
+      })
+      .on("mouseenter", function(){ this.tipsy.show(); })
+      .on("mouseleave", function(){ this.tipsy.hide(); })
+      .on("click",      function(){ this.tipsy.hide();
+        if(me instanceof kshf.Summary_Set){
+          me.setListSummary.setShowSetMatrix(false);
+        } else {
+          me.setCollapsedAndLayout(!me.collapsed);
+        }
+      });
+
+    this.DOM.buttonSummaryExpand = header_display_control.append("span")
+      .attr("class","buttonSummaryExpand fa fa-arrows-alt")
+      .each(function(){
+        this.tipsy = new Tipsy(this, {
+          gravity: function(){ return me.panelOrder!==0?'sw':'nw'; }, title: kshf.lang.cur.MaximizeSummary
+        });
+      })
+      .on("mouseenter", function(){ this.tipsy.show(); })
+      .on("mouseleave", function(){ this.tipsy.hide(); })
+      .on("click",      function(){ this.tipsy.hide();
+        me.panel.collapseAllSummaries(me);
+        me.browser.updateLayout_Height();
+      });
+
+    this.DOM.buttonSummaryRemove = header_display_control.append("span")
+      .attr("class","buttonSummaryRemove fa fa-remove")
+      .each(function(){
+        this.tipsy = new Tipsy(this, {
+          gravity: function(){ return me.panelOrder!==0?'sw':'nw'; }, title: kshf.lang.cur.RemoveSummary
+        });
+      })
+      .on("mouseenter", function(){ this.tipsy.show(); })
+      .on("mouseleave", function(){ this.tipsy.hide(); })
+      .on("click",      function(){ this.tipsy.hide();
+        me.removeFromPanel();
+        me.clearDOM();
+        me.browser.updateLayout();
+      });
+
+    this.DOM.summaryName = this.DOM.headerGroup.append("span")
+      .attr("class","summaryName")
+      .attr("edittitle",false)
+      .on("click",function(){ if(me.collapsed) me.setCollapsedAndLayout(false); });
+
+    this.DOM.clearFilterButton = this.DOM.summaryName.append("div")
+      .attr("class","clearFilterButton fa")
+      .each(function(d){ this.tipsy = new Tipsy(this, { gravity: 'e', title: kshf.lang.cur.RemoveFilter }); })
+      .on("mouseenter", function(){ this.tipsy.show(); })
+      .on("mouseleave", function(){ this.tipsy.hide(); })
+      .on("click",      function(){ this.tipsy.hide(); me.summaryFilter.clearFilter(); });
+
+    this.DOM.summaryName_text = this.DOM.summaryName.append("span").attr("class","summaryName_text editableText")
+      .attr("contenteditable",false)
+      .each(function(summary){ this.tipsy = new Tipsy(this, { gravity: 'w', title: kshf.lang.cur.EditTitle }); })
+      .on("mouseenter",function(){
+        if(!me.browser.authoringMode) return;
+        this.tipsy.show();
+      })
+      .on("mouseleave",function(){ this.tipsy.hide(); })
+      .on("mousedown", function(){
+        // stop dragging event start
+        d3.event.stopPropagation();
+        d3.event.preventDefault();
+      })
+      .on("click", function(){
+        if(!me.browser.authoringMode) return;
+        var curState=this.parentNode.getAttribute("edittitle");
+        if(curState===null || curState==="false"){
+          this.parentNode.setAttribute("edittitle",true);
+          var parentDOM = d3.select(this.parentNode);
+          var v=parentDOM.select(".summaryName_text")[0][0];
+          v.setAttribute("contenteditable",true);
+          v.focus();
+        } else {
+          this.parentNode.setAttribute("edittitle",false);
+          var parentDOM = d3.select(this.parentNode);
+          var v=parentDOM.select(".summaryName_text")[0][0];
+          v.setAttribute("contenteditable",false);
+          me.browser.changeSummaryName(me.summaryName,v.textContent);
+        }
+      })
+      .on("blur",function(){
+        this.parentNode.setAttribute("edittitle",false);
+        this.setAttribute("contenteditable", false);
+        me.browser.changeSummaryName(me.summaryName,this.textContent);
+      })
+      .on("keydown",function(){
+        if(event.keyCode===13){ // ENTER
           this.parentNode.setAttribute("edittitle",false);
           this.setAttribute("contenteditable", false);
           me.browser.changeSummaryName(me.summaryName,this.textContent);
-        })
-        .on("keydown",function(){
-          if(event.keyCode===13){ // ENTER
-            this.parentNode.setAttribute("edittitle",false);
-            this.setAttribute("contenteditable", false);
-            me.browser.changeSummaryName(me.summaryName,this.textContent);
-          }
-        })
-        .html(this.summaryName);
+        }
+      })
+      .html(this.summaryName);
 
     this.DOM.summaryIcons = this.DOM.headerGroup.append("span").attr("class","summaryIcons");
 
     this.DOM.summaryConfigControl = this.DOM.summaryIcons.append("span")
       .attr("class","summaryConfigControl fa fa-gear")
-      .each(function(d){  this.tipsy = new Tipsy(this, { gravity:'ne', title: "Configure" }); })
-      .on("mouseover",function(d){ this.tipsy.show(); })
-      .on("mouseout" ,function(d){ this.tipsy.hide(); })
-      .on("click",function(d){
-        this.tipsy.hide();
-        me.DOM.root.attr("showConfig",me.DOM.root.attr("showConfig")==="false");
+      .each(function(){  this.tipsy = new Tipsy(this, { gravity:'ne', title: "Configure" }); })
+      .on("mouseenter", function(){ this.tipsy.show(); })
+      .on("mouseleave", function(){ this.tipsy.hide(); })
+      .on("click",      function(){ this.tipsy.hide();
+        var open = me.DOM.root.attr("showConfig")==="false";
+        if(open){
+          if(me.browser.summaryWithOpenConfig){
+            // Close the open summary
+            me.browser.summaryWithOpenConfig.DOM.root.attr("showConfig",false);
+          }
+          me.browser.summaryWithOpenConfig = me;
+        } else {
+          me.browser.summaryWithOpenConfig = undefined;
+        }
+        me.DOM.root.attr("showConfig",open);
       });
 
-    this.DOM.summaryIcons.append("span").attr("class", "setMatrixButton fa fa-tags")
+    this.DOM.setMatrixButton = this.DOM.summaryIcons.append("span").attr("class", "setMatrixButton fa fa-tags")
       .each(function(d){
         this.tipsy = new Tipsy(this, { gravity: 'ne', title: "Show/Hide pair-wise relations" });
       })
-      .on("mouseover",function(){ this.tipsy.show(); })
-      .on("mouseout" ,function(){ this.tipsy.hide(); })
-      .on("click",function(){ me.setShowSetMatrix(!me.show_set_matrix); });
+      .on("mouseenter", function(){ this.tipsy.show(); })
+      .on("mouseleave", function(){ this.tipsy.hide(); })
+      .on("click",      function(){ this.tipsy.hide(); me.setShowSetMatrix(!me.show_set_matrix); });
 
-    this.DOM.summaryForRecordDisplay = this.DOM.summaryIcons.append("span")
+    this.DOM.useForRecordDisplay = this.DOM.summaryIcons.append("span")
       .attr("class", "useForRecordDisplay fa")
       .each(function(d){
         this.tipsy = new Tipsy(this, {
@@ -6004,9 +6029,9 @@ kshf.Summary_Base.prototype = {
           }
         });
       })
-      .on("mouseover",function(d){ this.tipsy.show(); })
-      .on("mouseout" ,function(d){ this.tipsy.hide(); })
-      .on("click",function(d){
+      .on("mouseenter", function(){ this.tipsy.show(); })
+      .on("mouseleave", function(){ this.tipsy.hide(); })
+      .on("click",      function(){ this.tipsy.hide();
         if(me.browser.recordDisplay.recordViewSummary===null) return;
         me.browser.recordDisplay.setSortingOpt_Active(me);
         me.browser.recordDisplay.refreshSortingOptions();
@@ -6020,25 +6045,22 @@ kshf.Summary_Base.prototype = {
           title: function(){ return "View as "+(me.viewType==='list'?'Map':'List'); }
         });
       })
-      .on("mouseover",function(d){ this.tipsy.show(); })
-      .on("mouseout" ,function(d){ this.tipsy.hide(); })
-      .on("click",function(d){
-        this.tipsy.hide();
+      .on("mouseenter", function(){ this.tipsy.show(); })
+      .on("mouseleave", function(){ this.tipsy.hide(); })
+      .on("click",      function(){ this.tipsy.hide();
         this.setAttribute("viewAs",me.viewType);
         me.viewAs( (me.viewType==='list') ? 'map' : 'list' );
       });
 
     this.DOM.summaryDescription = this.DOM.summaryIcons.append("span")
-      .attr("class","summaryDescription fa fa-info-circle")
-      .each(function(d){  this.tipsy = new Tipsy(this, { gravity:'ne', title:function(){return me.description;} }); })
-      .on("mouseover",function(d){ this.tipsy.show(); })
-      .on("mouseout" ,function(d){ this.tipsy.hide(); });
-
+      .attr("class","summaryDescription fa fa-info")
+      .each(function(){  this.tipsy = new Tipsy(this, { gravity:'ne', title:function(){return me.description;} }); })
+      .on("mouseenter", function(){ this.tipsy.show(); })
+      .on("mouseleave", function(){ this.tipsy.hide(); });
     this.setDescription(this.description);
 
     this.DOM.summaryConfig = this.DOM.root.append("div").attr("class","summaryConfig");
-
-    this.DOM.wrapper = this.DOM.root.append("div").attr("class","wrapper");
+    this.DOM.wrapper       = this.DOM.root.append("div").attr("class","wrapper");
 
     this.insertDOM_EmptyAggr();
   },
@@ -6046,13 +6068,13 @@ kshf.Summary_Base.prototype = {
   setDescription: function(description){
     this.description = description;
     if(this.DOM.summaryDescription===undefined) return;
-    this.DOM.summaryDescription.style("display",this.description===undefined?null:"inline");
+    this.DOM.summaryDescription.style("display",this.description===undefined?null:"inline-block");
   },
-  /** -- */
+  /** -- Shared - Summary Base -- */
   insertChartAxis_Measure: function(dom, pos1, pos2){
     var me=this;
     this.DOM.chartAxis_Measure = dom.append("div").attr("class","chartAxis_Measure");
-    this.DOM.chartAxis_Measure.append("span").attr("class","measurePercentControl")
+    this.DOM.measurePercentControl = this.DOM.chartAxis_Measure.append("span").attr("class","measurePercentControl")
       .each(function(){
         this.tipsy = new Tipsy(this, {
           gravity: pos1, title: function(){
@@ -6060,21 +6082,12 @@ kshf.Summary_Base.prototype = {
           },
         })
       })
-      .on("click",function(){
-        this.tipsy.hide();
-        me.browser.setPercentLabelMode(!me.browser.percentModeActive);
-      })
-      .on("mouseover",function(){
-        me.browser.DOM.root.selectAll(".measurePercentControl").attr("highlight",true);
-        this.tipsy.show();
-      })
-      .on("mouseout",function(){
-        me.browser.DOM.root.selectAll(".measurePercentControl").attr("highlight",false);
-        this.tipsy.hide();
-      });
+      .on("click",      function(){ this.tipsy.hide(); me.browser.setPercentLabelMode(!me.browser.percentModeActive); })
+      .on("mouseenter", function(){ this.tipsy.show(); me.browser.DOM.root.attr("measurePercentControl",true); })
+      .on("mouseleave", function(){ this.tipsy.hide(); me.browser.DOM.root.attr("measurePercentControl",null); });
 
     // Two controls, one for each side of the scale
-    this.DOM.chartAxis_Measure.selectAll(".scaleModeControl").data(["1","2"])
+    this.DOM.scaleModeControl = this.DOM.chartAxis_Measure.selectAll(".scaleModeControl").data(["1","2"])
       .enter().append("span")
         .attr("class",function(d){ return "scaleModeControl measureAxis_"+d; })
         .each(function(d){
@@ -6087,18 +6100,9 @@ kshf.Summary_Base.prototype = {
             },
           });
         })
-        .on("click",function(){ 
-          this.tipsy.hide();
-          me.browser.setScaleMode(!me.browser.ratioModeActive);
-        })
-        .on("mouseover",function(){
-          me.browser.showScaleModeControls(true);
-          this.tipsy.show();
-        })
-        .on("mouseout",function(){
-          me.browser.showScaleModeControls(false);
-          this.tipsy.hide();
-        });
+        .on("click",      function(){ this.tipsy.hide(); me.browser.setScaleMode(!me.browser.ratioModeActive); })
+        .on("mouseenter", function(){ this.tipsy.show(); me.browser.showScaleModeControls(true);  })
+        .on("mouseleave", function(){ this.tipsy.hide(); me.browser.showScaleModeControls(false); });
 
     this.DOM.chartAxis_Measure_TickGroup = this.DOM.chartAxis_Measure.append("div").attr("class","tickGroup");
 
@@ -6139,7 +6143,7 @@ kshf.Summary_Base.prototype = {
   /** -- */
   insertDOM_EmptyAggr: function(){
     var me = this;
-    this.DOM.missingValueAggr = this.DOM.wrapper.append("span").attr("class","missingValueAggr fa fa-ban")
+    this.DOM.missingValueAggr = this.DOM.wrapper.append("span").attr("class","missingValueAggr aggrGlyph fa fa-ban")
       .each(function(){
         me.missingValueAggr.DOM.aggrGlyph = this;
         this.tipsy = new Tipsy(this, {gravity: 'w', title: function(){ 
@@ -6252,6 +6256,9 @@ kshf.Summary_Base.prototype = {
     if(this.viewType){
       if(this.viewType==='map') config.viewAs = this.viewType;
     }
+    if(this.heightCat!==kshf.catHeight){
+      config.catHeight = this.heightCat;
+    }
     return config;
   },
   /** -- */
@@ -6270,7 +6277,7 @@ var Summary_Categorical_functions = {
     kshf.Summary_Base.prototype.initialize.call(this,browser,name,attribFunc);
     this.type='categorical';
 
-    this.heightRow_category = 18;
+    this.heightCat = kshf.catHeight;
     this.show_set_matrix = false;
     this.scrollTop_cache = 0;
     this.firstCatIndexInView = 0;
@@ -6318,9 +6325,8 @@ var Summary_Categorical_functions = {
     var totalWidth= 25;
     var maxAggregate_Total = this.getMaxAggr_Total();
     nuggetChart.selectAll(".nuggetBar").data(this._cats).enter()
-      .append("span")
-      .attr("class","nuggetBar")
-      .style("width",function(cat){ return totalWidth*(cat.records.length/maxAggregate_Total)+"px"; });
+      .append("span").attr("class","nuggetBar")
+        .style("width",function(cat){ return totalWidth*(cat.records.length/maxAggregate_Total)+"px"; });
 
     this.DOM.nugget.select(".nuggetInfo").html(
       "<span class='fa fa-tag"+(this.isMultiValued?"s":"")+"'></span><br>"+
@@ -6337,12 +6343,12 @@ var Summary_Categorical_functions = {
     }
     if(this.isEmpty()) return this.getHeight_Header();
     // minimum 2 categories
-    return this.getHeight_WithoutCats() + this._cats.length*this.heightRow_category;
+    return this.getHeight_WithoutCats() + this._cats.length*this.heightCat;
   },
   /** -- */
   getHeight_RangeMin: function(){
     if(this.isEmpty()) return this.getHeight_Header();
-    return this.getHeight_WithoutCats() + Math.min(this.catCount_Visible,2)*this.heightRow_category;
+    return this.getHeight_WithoutCats() + Math.min(this.catCount_Visible,2)*this.heightCat;
   },
   getHeight_WithoutCats: function(){
     return this.getHeight_Header() + this.getHeight_Config() + this.getHeight_Bottom();
@@ -6362,11 +6368,15 @@ var Summary_Categorical_functions = {
   },
   /** -- */
   getHeight_VisibleAttrib: function(){
-    return this.catCount_Visible*this.heightRow_category;
+    return this.catCount_Visible*this.heightCat;
   },
   /** -- */
   getWidth_Label: function(){
     return this.panel.width_catLabel;
+  },
+  /** --  Label text + the measure text */
+  getWidth_TotalText: function(){
+    return this.panel.width_catLabel + this.panel.width_catMeasureLabel;
   },
   /** -- */
   getWidth_CatChart: function(){
@@ -6393,7 +6403,7 @@ var Summary_Categorical_functions = {
   },
   /** -- */
   scrollBarShown: function(){
-    return this.categoriesHeight<this._cats.length*this.heightRow_category;
+    return this.categoriesHeight<this._cats.length*this.heightCat;
   },
   /** returns the maximum active aggregate value per row in chart data */
   getMaxAggr_Active: function(){
@@ -6847,6 +6857,11 @@ var Summary_Categorical_functions = {
     this.refreshViz_EmptyRecords();
   },
 
+  /** -- */
+  printAggrSelection: function(aggr){
+    return this.catLabel_Func.call(aggr.data);
+  },
+
   // Modified internal dataMap function - Skip rows with 0 active item count
   setMinAggrValue: function(v){
     this.minAggrValue = Math.max(1,v);
@@ -6894,15 +6909,15 @@ var Summary_Categorical_functions = {
 
     this.insertRoot(beforeDOM);
 
-    this.DOM.root
-      .attr("filtered_or",0)
-      .attr("filtered_and",0)
-      .attr("filtered_not",0)
-      .attr("filtered_total",0)
-      .attr("isMultiValued",this.isMultiValued)
-      .attr("summary_type","categorical")
-      .attr("hasMap",this.catMap!==undefined)
-      .attr("viewType",this.viewType);
+    this.DOM.root.attr({
+      filtered_or: 0,
+      filtered_and: 0,
+      filtered_not: 0,
+      filtered_total: 0,
+      isMultiValued: this.isMultiValued,
+      summary_type: 'categorical',
+      hasMap: this.catMap!==undefined,
+      viewType: this.viewType });
 
     this.insertHeader();
 
@@ -6923,13 +6938,13 @@ var Summary_Categorical_functions = {
       ])
       .enter()
       .append("span").attr("class",function(d){ return "configOption pos_"+d.v;})
-      .attr("active",function(d){ return d.v===me.heightRow_category; })
+      .attr("active",function(d){ return d.v===me.heightCat; })
       .html(function(d){ return d.l; })
       .on("click", function(d){ 
         if(d.v==="minus"){
-          me.setHeight_Category(me.heightRow_category-1);
+          me.setHeight_Category(me.heightCat-1);
         } else if(d.v==="plus"){
-          me.setHeight_Category(me.heightRow_category+1);
+          me.setHeight_Category(me.heightCat+1);
         } else {
           me.setHeight_Category(d.v);
         }
@@ -6939,91 +6954,87 @@ var Summary_Categorical_functions = {
   },
     /** -- */
     init_DOM_Cat: function(){
-        var me=this;
-        this.DOM.summaryCategorical = this.DOM.wrapper.append("div").attr("class","summaryCategorical");
+      var me=this;
+      this.DOM.summaryCategorical = this.DOM.wrapper.append("div").attr("class","summaryCategorical");
 
-        this.DOM.summaryControls = this.DOM.summaryCategorical.append("div").attr("class","summaryControls");
-        this.initDOM_CatTextSearch();
-        this.initDOM_CatSortButton();
-        this.initDOM_CatSortOpts();
+      this.DOM.summaryControls = this.DOM.summaryCategorical.append("div").attr("class","summaryControls");
+      this.initDOM_CatTextSearch();
+      this.initDOM_CatSortButton();
+      this.initDOM_CatSortOpts();
 
-        if(this.showTextSearch) this.DOM.catTextSearch.style("display","block");
+      if(this.showTextSearch) this.DOM.catTextSearch.style("display","block");
 
-        this.refreshConfigRowCount();
+      this.refreshConfigRowCount();
 
-        this.DOM.scrollToTop = this.DOM.summaryCategorical.append("div").attr("class","scrollToTop fa fa-arrow-up")
-          .each(function(){ this.tipsy = new Tipsy(this, {gravity: 'e', title: kshf.lang.cur.ScrollToTop }); })
-          .on("mouseover",function(){ this.tipsy.show(); })
-          .on("mouseout" ,function(){ this.tipsy.hide(); })
-          .on("click",function(d){
-            this.tipsy.hide();
-            kshf.Util.scrollToPos_do(me.DOM.aggrGroup,0);
+      this.DOM.scrollToTop = this.DOM.summaryCategorical.append("div").attr("class","scrollToTop fa fa-arrow-up")
+        .each(function(){ this.tipsy = new Tipsy(this, {gravity: 'e', title: kshf.lang.cur.ScrollToTop }); })
+        .on("mouseenter", function(){ this.tipsy.show(); })
+        .on("mouseleave", function(){ this.tipsy.hide(); })
+        .on("click",      function(){ this.tipsy.hide(); kshf.Util.scrollToPos_do(me.DOM.aggrGroup,0); });
+
+      this.DOM.aggrGroup = this.DOM.summaryCategorical.append("div").attr("class","aggrGroup")
+        .on("mousedown",function(){
+          d3.event.stopPropagation();
+          d3.event.preventDefault();
+        })
+        .on("scroll",function(){
+          if(kshf.Util.ignoreScrollEvents===true) return;
+          me.scrollTop_cache = me.DOM.aggrGroup[0][0].scrollTop;
+
+          me.DOM.scrollToTop.style("visibility", me.scrollTop_cache>0?"visible":"hidden");
+
+          me.DOM.chartCatLabelResize.style("top",me.scrollTop_cache+"px");
+          me.firstCatIndexInView = Math.floor(me.scrollTop_cache/me.heightCat);
+          me.refreshScrollDisplayMore(me.firstCatIndexInView+me.catCount_InDisplay);
+          me.updateCatIsVisible();
+          me.cullAttribs();
+          me.refreshMeasureLabel();
+        });
+      this.DOM.aggrGroup_list = this.DOM.aggrGroup;
+
+      this.DOM.catMap_Base = this.DOM.summaryCategorical.append("div").attr("class","catMap_Base");
+
+      // with this, I make sure that the (scrollable) div height is correctly set to visible number of categories
+      this.DOM.chartBackground = this.DOM.aggrGroup.append("span").attr("class","chartBackground");
+
+      this.DOM.chartCatLabelResize = this.DOM.chartBackground.append("span").attr("class","chartCatLabelResize dragWidthHandle")
+        .on("mousedown", function (d, i) {
+          var resizeDOM = this;
+          me.panel.DOM.root.attr("catLabelDragging",true);
+
+          me.browser.DOM.pointerBlock.attr("active","");
+          me.browser.DOM.root.style('cursor','col-resize');
+          me.browser.setNoAnim(true);
+          var mouseDown_x = d3.mouse(d3.select("body")[0][0])[0];
+          var initWidth = me.panel.width_catLabel;
+
+          d3.select("body").on("mousemove", function() {
+            var mouseDown_x_diff = d3.mouse(d3.select("body")[0][0])[0]-mouseDown_x;
+            me.panel.setWidthCatLabel(initWidth+mouseDown_x_diff);
+          }).on("mouseup", function(){
+            me.panel.DOM.root.attr("catLabelDragging",false);
+            me.browser.DOM.pointerBlock.attr("active",null);
+            me.browser.DOM.root.style('cursor','default');
+            me.browser.setNoAnim(false);
+            d3.select("body").on("mousemove", null).on("mouseup", null);
           });
+         d3.event.preventDefault();
+       });
 
-        this.DOM.aggrGroup = this.DOM.summaryCategorical.append("div").attr("class","aggrGroup")
-          .on("mousedown",function(){
-            d3.event.stopPropagation();
-            d3.event.preventDefault();
-          })
-          .on("scroll",function(d){
-            if(kshf.Util.ignoreScrollEvents===true) return;
-            me.scrollTop_cache = me.DOM.aggrGroup[0][0].scrollTop;
+      this.DOM.belowCatChart = this.DOM.summaryCategorical.append("div").attr("class","belowCatChart");
 
-            me.DOM.scrollToTop.style("visibility", me.scrollTop_cache>0?"visible":"hidden");
+      this.insertChartAxis_Measure(this.DOM.belowCatChart,'e','e');
 
-            me.firstCatIndexInView = Math.floor(me.scrollTop_cache/me.heightRow_category);
-            me.refreshScrollDisplayMore(me.firstCatIndexInView+me.catCount_InDisplay);
-            me.updateCatIsVisible();
-            me.cullAttribs();
-            me.refreshMeasureLabel();
-          });
-        this.DOM.aggrGroup_list = this.DOM.aggrGroup;
+      this.DOM.scroll_display_more = this.DOM.belowCatChart.append("div")
+        .attr("class","hasLabelWidth scroll_display_more")
+        .on("click",function(){
+          kshf.Util.scrollToPos_do(
+            me.DOM.aggrGroup, me.DOM.aggrGroup[0][0].scrollTop+me.heightCat);
+        });
 
-        this.DOM.catMap_Base = this.DOM.summaryCategorical.append("div").attr("class","catMap_Base");
-
-        // with this, I make sure that the (scrollable) div height is correctly set to visible number of categories
-        this.DOM.chartBackground = this.DOM.aggrGroup.append("span").attr("class","chartBackground");
-
-        this.DOM.chartCatLabelResize = this.DOM.chartBackground.append("span").attr("class","chartCatLabelResize dragWidthHandle")
-            .on("mousedown", function (d, i) {
-                var resizeDOM = this;
-                me.panel.DOM.root.attr("catLabelDragging",true);
-
-                me.browser.DOM.pointerBlock.attr("active","");
-                me.browser.DOM.root.style('cursor','col-resize');
-                me.browser.setNoAnim(true);
-                var mouseDown_x = d3.mouse(d3.select("body")[0][0])[0];
-                var initWidth = me.panel.width_catLabel;
-
-                d3.select("body").on("mousemove", function() {
-                    var mouseDown_x_diff = d3.mouse(d3.select("body")[0][0])[0]-mouseDown_x;
-                    me.panel.setWidthCatLabel(initWidth+mouseDown_x_diff);
-                }).on("mouseup", function(){
-                    me.panel.DOM.root.attr("catLabelDragging",false);
-                    me.browser.DOM.pointerBlock.attr("active",null);
-                    me.browser.DOM.root.style('cursor','default');
-                    me.browser.setNoAnim(false);
-                    d3.select("body").on("mousemove", null).on("mouseup", null);
-                });
-               d3.event.preventDefault();
-           });
-
-        this.DOM.belowCatChart = this.DOM.summaryCategorical.append("div").attr("class","belowCatChart");
-
-        this.insertChartAxis_Measure(this.DOM.belowCatChart,'e','e');
-
-        this.DOM.scroll_display_more = this.DOM.belowCatChart.append("div")
-          .attr("class","hasLabelWidth scroll_display_more")
-          .on("click",function(){
-            kshf.Util.scrollToPos_do(
-              me.DOM.aggrGroup, me.DOM.aggrGroup[0][0].scrollTop+me.heightRow_category);
-          });
-
-        this.insertCategories();
-
-        this.refreshLabelWidth();
-
-        this.updateCatSorting(0,true,true);
+      this.insertCategories();
+      this.refreshLabelWidth();
+      this.updateCatSorting(0,true,true);
     },
     /** -- */
     initDOM_CatSortButton: function(){
@@ -7045,8 +7056,8 @@ var Summary_Categorical_functions = {
             gravity: 'w', title: function(){ return kshf.lang.cur[me.dirtySort?'Reorder':'ReverseOrder']; }
           });
         })
-        .on("mouseover",function(){ this.tipsy.show(); })
-        .on("mouseout" ,function(){ this.tipsy.hide(); });
+        .on("mouseenter", function(){ this.tipsy.show(); })
+        .on("mouseleave", function(){ this.tipsy.hide(); });
       this.refreshSortButton();
     },
     /** -- */
@@ -7074,10 +7085,9 @@ var Summary_Categorical_functions = {
               gravity: 'nw', title: "Clear text search"
             });
           })
-          .on("mouseover",function(){ this.tipsy.show(); })
-          .on("mouseout" ,function(){ this.tipsy.hide(); })
-          .on("click",function() {
-            this.tipsy.hide();
+          .on("mouseenter", function(){ this.tipsy.show(); })
+          .on("mouseleave", function(){ this.tipsy.hide(); })
+          .on("click",      function(){ this.tipsy.hide();
             me.DOM.catTextSearchControl.attr("showClear",false);
             me.summaryFilter.clearFilter();
           });
@@ -7153,21 +7163,15 @@ var Summary_Categorical_functions = {
           .attr("filtered_not",this.summaryFilter.selected_NOT.length)
           .attr("filtered_total",this.summaryFilter.selectedCount_Total());
       }
-      var show_box = (this.summaryFilter.selected_OR.length+this.summaryFilter.selected_AND.length)>1;
+      var showOR = (this.summaryFilter.selected_OR.length+this.summaryFilter.selected_AND.length)>1;
       this.summaryFilter.selected_OR.forEach(function(category){
-        category.DOM.aggrGlyph.setAttribute("show-box",show_box);
-      },this);
-      this.summaryFilter.selected_AND.forEach(function(category){
-        category.DOM.aggrGlyph.setAttribute("show-box",show_box);
-      },this);
-      this.summaryFilter.selected_NOT.forEach(function(category){
-        category.DOM.aggrGlyph.setAttribute("show-box","true");
+        category.DOM.aggrGlyph.setAttribute("showOR",showOR);
       },this);
     },
     /** -- */
     unselectAllCategories: function(){
       this._cats.forEach(function(aggr){
-        if(aggr.f_selected() && aggr.DOM.aggrGlyph) aggr.DOM.aggrGlyph.removeAttribute("selection");
+        if(aggr.f_selected() && aggr.DOM.aggrGlyph) aggr.DOM.aggrGlyph.removeAttribute("cSelection");
         aggr.set_NONE();
       });
       this.summaryFilter.selected_All_clear();
@@ -7212,13 +7216,14 @@ var Summary_Categorical_functions = {
         return;
       }
 
-      this.categoriesHeight = Math.min( newHeight, this.heightRow_category*this.catCount_Visible);
+      this.categoriesHeight = Math.min( newHeight, this.heightCat*this.catCount_Visible);
       if(this.onCatHeight && attribHeight_old!==this.categoriesHeight) this.onCatHeight(this);
     },
 
     /** -- */
     setHeight_Category: function(h){
-      this.heightRow_category = Math.min(50, Math.max(10,h));
+      this.heightCat = Math.min(50, Math.max(10,h));
+      if(!this.DOM.inited) return;
       if(this.viewType==='list') {
         this.refreshHeight_Category();
       } else {
@@ -7235,17 +7240,16 @@ var Summary_Categorical_functions = {
 
       this.DOM.aggrGlyphs
         .each(function(aggr){
-          kshf.Util.setTransform(this, "translate("+aggr.posX+"px,"+(me.heightRow_category*aggr.orderIndex)+"px)");
+          kshf.Util.setTransform(this, "translate("+aggr.posX+"px,"+(me.heightCat*aggr.orderIndex)+"px)");
         })
-        .style("height",this.heightRow_category+"px");
+        .style("height",this.heightCat+"px");
 
-      this.DOM.aggrGlyphs.selectAll(".categoryLabel").style("padding-top",(this.heightRow_category/2-8)+"px");
+      this.DOM.aggrGlyphs.selectAll(".categoryLabel").style("padding-top",(this.heightCat/2-8)+"px");
 
       this.DOM.chartBackground.style("height",this.getHeight_VisibleAttrib()+"px");
-      this.DOM.chartCatLabelResize.style("height",this.getHeight_VisibleAttrib()+"px");
 
       this.DOM.summaryConfig_CatHeight.selectAll(".configOption").attr("active",false);
-      this.DOM.summaryConfig_CatHeight.selectAll(".pos_"+this.heightRow_category).attr("active",true);
+      this.DOM.summaryConfig_CatHeight.selectAll(".pos_"+this.heightCat).attr("active",true);
 
       if(this.onCatHeight) this.onCatHeight(this);
 
@@ -7286,9 +7290,8 @@ var Summary_Categorical_functions = {
       if(this.DOM.summaryCategorical===undefined) return;
       this.updateChartScale_Measure();
       this.DOM.summaryCategorical.style("width",this.getWidth()+"px");
-      this.DOM.summaryName.style("max-width",(this.getWidth()-40)+"px");
-      this.DOM.chartAxis_Measure.selectAll(".scaleModeControl")
-        .style("width",(this.getWidth()-this.panel.width_catMeasureLabel-this.getWidth_Label()-kshf.scrollWidth+5)+"px");
+      this.DOM.summaryName.style("max-width",(this.getWidth()- 40)+"px");
+      this.DOM.chartAxis_Measure.selectAll(".scaleModeControl").style("width",(this.getWidth_CatChart()+5)+"px");
       this.refreshViz_Axis();
     },
     /** -- */
@@ -7300,7 +7303,7 @@ var Summary_Categorical_functions = {
         this.DOM.measureTotalTip.style("opacity",0);
       } else {
         var me = this;
-        var width_Text = this.getWidth_Label()+this.panel.width_catMeasureLabel;
+        var width_Text = this.getWidth_TotalText();
         this.DOM.measure_Total.each(function(_cat){
           kshf.Util.setTransform(this, "translateX("+width_Text+"px) scaleX("+me.chartScale_Measure(_cat.measure('Total'))+")");
         });
@@ -7380,7 +7383,7 @@ var Summary_Categorical_functions = {
       }
       
       var maxWidth = this.chartScale_Measure.range()[1];
-      var width_Text = this.getWidth_Label()+this.panel.width_catMeasureLabel;
+      var width_Text = this.getWidth_TotalText();
 
       this.DOM.measure_Active.each(function(_cat){
         kshf.Util.setTransform(this,"translateX("+width_Text+"px) scaleX("+(ratioMode?
@@ -7388,13 +7391,13 @@ var Summary_Categorical_functions = {
           me.chartScale_Measure(_cat.measure('Active'))
         )+")");
       });
-      this.DOM.attribClickArea.style("width",function(_cat){
+      this.DOM.lockButton
+        .style("left",function(_cat){
           return width_Text+(ratioMode?
             ((_cat.recCnt.Active===0)?0:maxWidth):
-            Math.min((me.chartScale_Measure(_cat.measure('Active'))+10),maxWidth)
+            Math.min((me.chartScale_Measure(_cat.measure('Active'))),maxWidth)
           )+"px";
-        });
-      this.DOM.lockButton
+        })
         .attr("inside",function(_cat){
           if(ratioMode) return "";
           if(maxWidth-me.chartScale_Measure(_cat.measure('Active'))<10) return "";
@@ -7412,16 +7415,16 @@ var Summary_Categorical_functions = {
       var ratioMode = this.browser.ratioModeActive;
       var isThisIt = this===this.browser.highlightSelectedSummary;
       var maxWidth = this.chartScale_Measure.range()[1];
-      var width_Text = this.getWidth_Label()+this.panel.width_catMeasureLabel;
+      var width_Text = this.getWidth_TotalText();
 
       if(this.browser.vizActive.Highlight){
         if(this.browser.ratioModeActive) {
           if(this.viewType==='map'){
             //this.DOM.highlightedMeasureValue.style("left",(100*(this.mapColorScale(aggr.measure.Highlight)/9))+"%");
           } else {
-            this.DOM.highlightedMeasureValue
-              .style("opacity",1)
-              .style("left",(this.browser.allRecordsAggr.ratioHighlightToTotal()*maxWidth)+"px");
+            this.DOM.highlightedMeasureValue.style({
+              opacity: 1,
+              left: (this.browser.allRecordsAggr.ratioHighlightToTotal()*maxWidth)+"px" });
           }
         }
       } else {
@@ -7466,30 +7469,33 @@ var Summary_Categorical_functions = {
             if(v<=0 || v===undefined ) return "url(#diagonalHatch)";
             return me.mapColorQuantize(me.mapColorScale(v)); 
           })
-        return;
-      }
-
-      if(this.viewType==='list'){
+      } else { // this.viewType==='list'
         var totalC = this.browser.getActiveCompareSelCount();
         if(this.browser.measureFunc==="Avg") totalC++;
-        var barHeight = (this.heightRow_category-8)/(totalC+1);
+        var barHeight = (this.heightCat-8)/(totalC+1);
         this.DOM.measure_Highlight.each(function(aggr){
           var p = aggr.measure('Highlight');
           if(me.browser.preview_not) p = aggr._measure.Active - aggr._measure.Highlight;
           kshf.Util.setTransform(this,
-            "translateX("+width_Text+"px) "+
+            "translateX("+width_Text+"px) translateY(4px)"+
             "scale("+(ratioMode ? ((p/aggr._measure.Active)*maxWidth ) : me.chartScale_Measure(p))+","+barHeight+")");
         });
       }
+    },
+    /** To initialize the positions of the compare blocks properly */
+    refreshViz_Compare_Force: function(){
+      this.refreshViz_Compare("A", 2, 2);
+      this.refreshViz_Compare("B", 2, 3);
+      this.refreshViz_Compare("C", 2, 4);
     },
     /** -- */
     refreshViz_Compare: function(cT, curGroup, totalGroups){
       if(this.isEmpty() || this.collapsed || !this.inBrowser()) return;
       var me=this, ratioMode=this.browser.ratioModeActive, maxWidth = this.chartScale_Measure.range()[1];
-      var width_Text = this.getWidth_Label()+this.panel.width_catMeasureLabel;
+      var width_Text = this.getWidth_TotalText();
       var _translateX = "translateX("+width_Text+"px) ";
-      var barHeight = (this.heightRow_category-8)/totalGroups;
-      var _translateY = "translateY("+(barHeight*(curGroup+1))+"px)";
+      var barHeight = (this.heightCat-8)/totalGroups;
+      var _translateY = "translateY("+(barHeight*(curGroup+1)+4)+"px)"; // 4pixel is the b=top gap
       var compId = "Compare_"+cT;
       this.DOM["measure_Compare_"+cT].each(function(aggr){
         var sx = (me.browser.vizActive[compId])?
@@ -7559,33 +7565,35 @@ var Summary_Categorical_functions = {
           kshf.Util.setTransform(this,"translateX("+(axis_Scale(d)-0.5)+"px)");
         }
 
-        var x=this.browser.noAnim;
-        if(x===false) this.browser.setNoAnim(true);
+        var x=me.browser.noAnim;
+        if(x===false) me.browser.setNoAnim(true);
         me.DOM.chartAxis_Measure.selectAll(".tick").style("opacity",1).each(transformFunc);
-        if(x===false) this.browser.setNoAnim(false);
+        if(x===false) me.browser.setNoAnim(false);
 
-        me.DOM.wrapper.attr("showMeasureAxis_2", this.configRowCount>0?"true":null);
-      });
+        me.DOM.wrapper.attr("showMeasureAxis_2", me.configRowCount>0?"true":null);
+      }, 10 );
     },
     /** -- */
     refreshLabelWidth: function(){
       if(this.isEmpty()) return;
       if(this.DOM.summaryCategorical===undefined) return;
       
-      var labelWidth = this.getWidth_Label();
-      var barChartMinX = labelWidth + this.panel.width_catMeasureLabel;
+      var width_Label = this.getWidth_Label();
+      var width_totalText = this.getWidth_TotalText();
 
-      this.DOM.chartCatLabelResize.style("left",(labelWidth+1)+"px");
-      this.DOM.summaryCategorical.selectAll(".hasLabelWidth").style("width",labelWidth+"px");
-      this.DOM.measureLabel
-        .style("left",labelWidth+"px")
-        .style("width",this.panel.width_catMeasureLabel+"px");
-      this.DOM.chartAxis_Measure.each(function(){
-        kshf.Util.setTransform(this,"translateX("+barChartMinX+"px)");
+      this.DOM.chartCatLabelResize.style("left",(width_Label+1)+"px");
+      this.DOM.summaryCategorical.selectAll(".hasLabelWidth").style("width",width_Label+"px");
+      this.DOM.measureLabel.style({
+        left:  width_Label+"px",
+        width: this.panel.width_catMeasureLabel+"px"
       });
-      this.DOM.catSortButton
-        .style("left",labelWidth+"px")
-        .style("width",this.panel.width_catMeasureLabel+"px");
+      this.DOM.chartAxis_Measure.each(function(){
+        kshf.Util.setTransform(this,"translateX("+width_totalText+"px)");
+      });
+      this.DOM.catSortButton.style({
+        left: width_Label+"px",
+        width: this.panel.width_catMeasureLabel+"px"
+      });
     },
     /** -- */
     refreshScrollDisplayMore: function(bottomItem){
@@ -7603,8 +7611,8 @@ var Summary_Categorical_functions = {
       if(this.isEmpty()) return;
 
       // update catCount_InDisplay
-      var c = Math.floor(this.categoriesHeight / this.heightRow_category);
-      var c = Math.floor(this.categoriesHeight / this.heightRow_category);
+      var c = Math.floor(this.categoriesHeight / this.heightCat);
+      var c = Math.floor(this.categoriesHeight / this.heightCat);
       if(c<0) c=1;
       if(c>this.catCount_Visible) c=this.catCount_Visible;
       if(this.catCount_Visible<=2){
@@ -7627,6 +7635,7 @@ var Summary_Categorical_functions = {
       var h=this.categoriesHeight;
       this.DOM.wrapper.style("height",(this.collapsed?"0":this.getHeight_Content())+"px");
       this.DOM.aggrGroup.style("height",h+"px");
+      this.DOM.chartCatLabelResize.style("height",h+"px");
       this.DOM.root.style("max-height",(this.getHeight()+1)+"px");
 
       this.DOM.chartAxis_Measure.selectAll(".longRefLine").style("top",(-h+1)+"px").style("height",(h-2)+"px");
@@ -7762,7 +7771,7 @@ var Summary_Categorical_functions = {
     onCatClick: function(ctgry){
       if(!this.isCatSelectable(ctgry)) return;
 
-      if(d3.event.shiftKey){
+      if(d3.event && d3.event.shiftKey){
         this.browser.setSelect_Compare(true);
         return;
       }
@@ -7815,8 +7824,7 @@ var Summary_Categorical_functions = {
 
       if(aggr.DOM.matrixRow) aggr.DOM.matrixRow.setAttribute("selection","selected");
 
-      aggr.DOM.aggrGlyph.setAttribute("selecttype","and");
-      aggr.DOM.aggrGlyph.setAttribute("selection","selected");
+      aggr.DOM.aggrGlyph.setAttribute("cSelection","and");
 
       // Comes after setting select type of the category - visual feedback on selection...
       if(!this.isMultiValued && this.summaryFilter.selected_AND.length!==0) return;
@@ -7834,6 +7842,7 @@ var Summary_Categorical_functions = {
           }
           this.DOM.highlightedMeasureValue.style("opacity",1);
         }
+        this.browser.refreshMeasureLabels("Highlight"); 
       }
     },
     /** -- */
@@ -7841,13 +7850,13 @@ var Summary_Categorical_functions = {
       ctgry.unselectAggregate();
       if(!this.isCatSelectable(ctgry)) return;
       this.browser.clearSelect_Highlight();
+      this.browser.refreshMeasureLabels("Active"); 
       if(this.viewType==='map') this.DOM.highlightedMeasureValue.style("opacity",0);
     },
     /** -- */
     onCatEnter_OR: function(ctgry){
       this.browser.clearSelect_Highlight();
-      ctgry.DOM.aggrGlyph.setAttribute("selecttype","or");
-      ctgry.DOM.aggrGlyph.setAttribute("selection","selected");
+      ctgry.DOM.aggrGlyph.setAttribute("cSelection","or");
       if(this.summaryFilter.selected_OR.length>0){
         this.browser.clearSelect_Highlight();
         if(this.viewType==='map') this.DOM.highlightedMeasureValue.style("opacity",0);
@@ -7856,7 +7865,7 @@ var Summary_Categorical_functions = {
     },
     /** -- */
     onCatLeave_OR: function(ctgry){
-      ctgry.DOM.aggrGlyph.setAttribute("selecttype","and");
+      ctgry.DOM.aggrGlyph.setAttribute("cSelection","and");
     },
     /** -- */
     onCatClick_OR: function(ctgry){
@@ -7866,17 +7875,16 @@ var Summary_Categorical_functions = {
     },
     /** -- */
     onCatEnter_NOT: function(ctgry){
-      ctgry.DOM.aggrGlyph.setAttribute("selecttype","not");
-      ctgry.DOM.aggrGlyph.setAttribute("selection","selected");
+      ctgry.DOM.aggrGlyph.setAttribute("cSelection","not");
       this.browser.preview_not = true;
       this.browser.setSelect_Highlight(ctgry);
       d3.event.stopPropagation();
     },
     /** -- */
     onCatLeave_NOT: function(ctgry){
-      ctgry.DOM.aggrGlyph.setAttribute("selecttype","and");
+      ctgry.DOM.aggrGlyph.setAttribute("cSelection","and");
       this.browser.preview_not = false;
-      this.browser.clearSelect_Highlight();
+      this.browser.setSelect_Highlight(ctgry);
       if(this.viewType==='map') this.DOM.highlightedMeasureValue.style("opacity",0);
     },
     /** -- */
@@ -7888,7 +7896,6 @@ var Summary_Categorical_functions = {
       d3.event.stopPropagation();
       d3.event.preventDefault();
     },
-
     /** - */
     insertCategories: function(){
       var me = this;
@@ -7900,15 +7907,14 @@ var Summary_Categorical_functions = {
       var DOM_cats_new = aggrGlyphSelection.enter()
         .append(this.viewType=='list' ? 'span' : 'g')
         .attr("class","aggrGlyph "+(this.viewType=='list'?'cat':'map')+"Glyph")
-        .attr("selected",0)
         .on("mousedown", function(){
           this._mousemove = false;
         })
         .on("mousemove", function(){
           this._mousemove = true;
           if(this.tipsy){
-            this.tipsy.jq_tip[0].style.left = (d3.event.pageX-this.tipsy.tipWidth-10)+"px";
-            this.tipsy.jq_tip[0].style.top = (d3.event.pageY-this.tipsy.tipHeight/2)+"px";
+            this.tipsy.jq_tip[0][0].style.left = (d3.event.pageX-this.tipsy.tipWidth-10)+"px";
+            this.tipsy.jq_tip[0][0].style.top = (d3.event.pageY-this.tipsy.tipHeight/2)+"px";
           }
         })
         .attr("title",me.catTooltip?function(_cat){ return me.catTooltip.call(_cat.data); }:null);
@@ -7917,10 +7923,8 @@ var Summary_Categorical_functions = {
 
       if(this.viewType==='list'){
         DOM_cats_new
-          .style("height",this.heightRow_category+"px")
+          .style("height",this.heightCat+"px")
           .each(function(_cat){ kshf.Util.setTransform(this,"translateY(0px)"); })
-
-        var clickArea = DOM_cats_new.append("span").attr("class", "clickArea")
           .on("mouseenter",function(_cat){
             if(me.browser.mouseSpeed<0.2) { 
               me.onCatEnter(_cat);
@@ -7934,7 +7938,7 @@ var Summary_Categorical_functions = {
           })
           .on("click", function(aggr){ me.onCatClick(aggr); });
 
-        clickArea.append("span").attr("class","lockButton fa")
+        DOM_cats_new.append("span").attr("class","lockButton fa")
           .on("mouseenter",function(aggr){ 
             this.tipsy = new Tipsy(this, {
               gravity: me.panel.name==='right'?'se':'w',
@@ -7951,7 +7955,7 @@ var Summary_Categorical_functions = {
           });
 
         var domAttrLabel = DOM_cats_new.append("span").attr("class", "categoryLabel hasLabelWidth")
-          .style("padding-top",(this.heightRow_category/2-8)+"px");
+          .style("padding-top",(this.heightCat/2-8)+"px");
 
         var filterButtons = domAttrLabel.append("span").attr("class", "filterButtons");
         filterButtons.append("span").attr("class","filterButton notButton")
@@ -7965,27 +7969,17 @@ var Summary_Categorical_functions = {
           .on("mouseout", function(_cat){ me.onCatLeave_OR(_cat); })
           .on("click",    function(_cat){ me.onCatClick_OR(_cat); });
 
-        this.DOM.theLabel = domAttrLabel.append("span").attr("class","theLabel").html(function(_cat){
-          return me.catLabel_Func.call(_cat.data);
-        });
-        DOM_cats_new.append("span").attr("class", "measureLabel");
+        domAttrLabel.append("span").attr("class","theLabel").html(function(aggr){ return me.catLabel_Func.call(aggr.data); });
+        DOM_cats_new.append("span").attr("class","measureLabel");
 
         ["Total","Active","Highlight","Compare_A","Compare_B","Compare_C"].forEach(function(m){
-          DOM_cats_new.append("span").attr("class", "measure_"+m);
+          DOM_cats_new.append("span").attr("class", "measure_"+m)
+            .on("mouseover" ,function(){ 
+              if(m!=="Total") me.browser.refreshMeasureLabels(this.classList[0].substr(8)); 
+              d3.event.preventDefault();
+              d3.event.stopPropagation();
+            });
         });
-
-        DOM_cats_new.selectAll("[class^='measure_Compare_']")
-          .on("mouseover" ,function(){ 
-            me.browser.refreshMeasureLabels(this.classList[0].substr(8)); 
-            d3.event.preventDefault();
-            d3.event.stopPropagation();
-          })
-          .on("mouseleave",function(){
-            me.browser.refreshMeasureLabels();
-            d3.event.preventDefault();
-            d3.event.stopPropagation();
-          });
-
         DOM_cats_new.append("span").attr("class", "total_tip");
 
       } else {
@@ -8002,8 +7996,8 @@ var Summary_Categorical_functions = {
           .on("mouseenter",function(_cat){
             if(this.tipsy) {
               this.tipsy.show();
-              this.tipsy.jq_tip[0].style.left = (d3.event.pageX-this.tipsy.tipWidth-10)+"px";
-              this.tipsy.jq_tip[0].style.top = (d3.event.pageY-this.tipsy.tipHeight/2)+"px";
+              this.tipsy.jq_tip[0][0].style.left = (d3.event.pageX-this.tipsy.tipWidth-10)+"px";
+              this.tipsy.jq_tip[0][0].style.top = (d3.event.pageY-this.tipsy.tipHeight/2)+"px";
             }
             if(me.browser.mouseSpeed<0.2) { 
               me.onCatEnter(_cat);
@@ -8017,12 +8011,14 @@ var Summary_Categorical_functions = {
             me.onCatLeave(_cat);
           });
 
-        DOM_cats_new.append("path").attr("class", "measure_Active");
-
-        DOM_cats_new.select(".measure_Active").on("click", function(aggr){ me.onCatClick(aggr); });
-        DOM_cats_new.append("text").attr("class", "measureLabel"); // label on top of (after) all the rest
+        DOM_cats_new.append("path").attr("class","measure_Active").on("click", function(aggr){ me.onCatClick(aggr); });
+        DOM_cats_new.append("text").attr("class","measureLabel"); // label on top of (after) all the rest
       }
       this.refreshDOMcats();
+
+      if(this.viewType==='list'){
+        this.refreshViz_Compare_Force();
+      }
     },
     /** -- */
     refreshDOMcats: function(){
@@ -8035,8 +8031,8 @@ var Summary_Categorical_functions = {
       },this);
 
       if(this.viewType==='list'){
-        this.DOM.attribClickArea = this.DOM.aggrGlyphs.selectAll(".clickArea");
-        this.DOM.lockButton      = this.DOM.aggrGlyphs.selectAll(".lockButton");
+        this.DOM.theLabel   = this.DOM.aggrGlyphs.selectAll(".theLabel");
+        this.DOM.lockButton = this.DOM.aggrGlyphs.selectAll(".lockButton");
       }
     },
     /** -- */
@@ -8063,9 +8059,9 @@ var Summary_Categorical_functions = {
     /** -- */
     cullAttribs: function(){
       if(this.viewType==='map') return; // no culling on maps, for now.  
-      this.DOM.aggrGlyphs
-        .style("visibility",function(_cat){ return _cat.isVisible?"visible":"hidden"; })
-        .style("display",function(_cat){ return _cat.isVisible?"block":"none"; });
+      this.DOM.aggrGlyphs.style({
+        visibility: function(_cat){ return _cat.isVisible?"visible":"hidden"; },
+        display   : function(_cat){ return _cat.isVisible?"block"  :"none"  ; }} );
       if(this.onCatCull) this.onCatCull.call(this);
     },
     /** -- */
@@ -8105,7 +8101,7 @@ var Summary_Categorical_functions = {
           this.style.display = "block";
 
           var x = 0;
-          var y = me.heightRow_category*ctgry.orderIndex;
+          var y = me.heightCat*ctgry.orderIndex;
           ctgry.posX = x;
           ctgry.posY = y;
           kshf.Util.setTransform(this,"translate("+x+"px,"+y+"px)");
@@ -8165,7 +8161,7 @@ var Summary_Categorical_functions = {
             }
             this.style.opacity = 1;
             ctgry.posX = 0;
-            ctgry.posY = me.heightRow_category*ctgry.orderIndex;
+            ctgry.posY = me.heightCat*ctgry.orderIndex;
             kshf.Util.setTransform(this,"translate("+ctgry.posX+"px,"+ctgry.posY+"px)");
           });
     },
@@ -8361,44 +8357,24 @@ var Summary_Categorical_functions = {
       this.DOM.catMapColorScale.append("span").attr("class","scaleBound boundMax");
       this.DOM.catMapColorScale.append("span").attr("class","scaleModeControl fa fa-arrows-h")
         .each(function(){
-          this.tipsy = new Tipsy(this, {
-            gravity: 'e', title: function(){
-              return kshf.lang.cur[me.browser.ratioModeActive?'Absolute':'PartOf']+" "+kshf.lang.cur.Width;
-            }
+          this.tipsy = new Tipsy(this, { gravity: 'e', title: function(){
+            return kshf.lang.cur[me.browser.ratioModeActive?'Absolute':'PartOf']+" "+kshf.lang.cur.Width; }
           });
         })
-        .on("click",function(){ 
-          this.tipsy.hide();
-          me.browser.setScaleMode(!me.browser.ratioModeActive);
-        })
-        .on("mouseover",function(){
-          me.browser.showScaleModeControls(true);
-          this.tipsy.show();
-        })
-        .on("mouseout",function(){
-          me.browser.showScaleModeControls(false);
-          this.tipsy.hide();
-        });
-      this.DOM.catMapColorScale.append("span").attr("class","measurePercentControl")
+        .on("mouseenter", function(){ this.tipsy.show(); me.browser.showScaleModeControls(true); })
+        .on("mouseleave", function(){ this.tipsy.hide(); me.browser.showScaleModeControls(false); })
+        .on("click",      function(){ this.tipsy.hide(); me.browser.setScaleMode(!me.browser.ratioModeActive); });
+      this.DOM.scaleModeControl = this.DOM.root.selectAll("scaleModeControl");
+
+      this.DOM.measurePercentControl = this.DOM.catMapColorScale.append("span").attr("class","measurePercentControl")
         .each(function(){
-          this.tipsy = new Tipsy(this, {
-            gravity: 'w', title: function(){
-              return "<span class='fa fa-eye'></span> "+kshf.lang.cur[(me.browser.percentModeActive?'Absolute':'Percent')];
-            },
-          })
+          this.tipsy = new Tipsy(this, { gravity: 'w', title: function(){
+            return "<span class='fa fa-eye'></span> "+kshf.lang.cur[(me.browser.percentModeActive?'Absolute':'Percent')]; },
+          });
         })
-        .on("click",function(){
-          this.tipsy.hide();
-          me.browser.setPercentLabelMode(!me.browser.percentModeActive);
-        })
-        .on("mouseover",function(){
-          me.browser.DOM.root.selectAll(".measurePercentControl").attr("highlight",true);
-          this.tipsy.show();
-        })
-        .on("mouseout",function(){
-          me.browser.DOM.root.selectAll(".measurePercentControl").attr("highlight",false);
-          this.tipsy.hide();
-        });
+        .on("mouseenter", function(){ this.tipsy.show(); me.browser.DOM.root.attr("measurePercentControl",true); })
+        .on("mouseleave", function(){ this.tipsy.hide(); me.browser.DOM.root.attr("measurePercentControl",null); })
+        .on("click",      function(){ this.tipsy.hide(); me.browser.setPercentLabelMode(!me.browser.percentModeActive); });
 
       this.DOM.highlightedMeasureValue = this.DOM.catMapColorScale.append("span").attr("class","highlightedMeasureValue");
       this.DOM.highlightedMeasureValue.append("div").attr('class','fa fa-mouse-pointer highlightedAggrValuePointer');
@@ -8415,12 +8391,8 @@ var Summary_Categorical_functions = {
             }
           });
         })
-        .on("mouseenter",function(d){ 
-          this.tipsy.show(); 
-        })
-        .on("mouseleave",function(){ 
-          this.tipsy.hide();
-        });
+        .on("mouseenter",function(){ this.tipsy.show(); })
+        .on("mouseleave",function(){ this.tipsy.hide(); });
 
       // Set height
       var h = this.categoriesHeight;
@@ -8462,30 +8434,32 @@ var Summary_Interval_functions = {
       var me = this;
 
       // pixel width settings...
-      this.height_hist = 1; // Initial width (will be updated later...)
-      this.height_hist_min = 10; // Minimum possible histogram height
-      this.height_hist_max = 100; // Maximim possible histogram height
-      this.height_slider = 12; // Slider height
-      this.height_labels = 13; // Height for labels
-      this.height_hist_topGap = 12; // Height for histogram gap on top.
-
-      this.width_barGap = 2; // The width between neighboring histgoram bars
+      this.height_hist        = 1;   // Initial width (will be updated later...)
+      this.height_hist_min    = 10;  // Minimum possible histogram height
+      this.height_hist_max    = 100; // Maximim possible histogram height
+      this.height_slider      = 12;  // Slider height
+      this.height_labels      = 13;  // Height for labels
+      this.height_hist_topGap = 12;  // Height for histogram gap on top.
+      this.height_recEncoding = 20;  // Record encoding chart height
+      this.height_percentile  = 32;  // Percentile chart height
+      this.width_barGap       = 2;   // The width between neighboring histgoram bars
       this.width_measureAxisLabel = 30; // ..
-
-      this.optimumTickWidth = 45;
+      this.optimumTickWidth   = 45;
 
       this.hasFloat = false;
       this.timeTyped = { 
         base: false,
         maxDateRes: function(){
-          if(this.day) return "day";
+          //if(this.hour ) return "hour";
+          if(this.day  ) return "day";
           if(this.month) return "month";
-          if(this.year) return "year";
+          if(this.year ) return "year";
         },
         minDateRes: function(){
-          if(this.year) return "year";
+          if(this.year ) return "year";
           if(this.month) return "month";
-          if(this.day) return "day";
+          if(this.day  ) return "day";
+          //if(this.hour ) return "hour";
         }
       };
 
@@ -8496,9 +8470,6 @@ var Summary_Interval_functions = {
       this.invertColorScale = false;
 
       this.highlightRangeLimits_Active = false;
-
-      this.quantile_val = {};
-      this.quantile_pos = {};
 
       this.histBins = [];
       this.intervalTicks = [];
@@ -8522,12 +8493,99 @@ var Summary_Interval_functions = {
       };
 
       if(this.records.length<=1000) this.initializeAggregates();
+
+      // only used if type is numeric (not timestamp)
+      this.quantile_val = {};
+
+      this.timeAxis_XFunc = function(aggr){ 
+        //return me.valueScale(aggr.minV) + me.getWidth_Bin()/2;
+        return (me.valueScale(aggr.minV) + me.valueScale(aggr.maxV))/2;
+      };
+    },
+    /** -- */
+    isEmpty: function(){
+      return this._isEmpty;
+    },
+    /** -- */
+    getHeight_Extra: function(){
+      return 7+
+        this.height_hist_topGap+
+        this.height_labels+
+        this.height_slider+
+        this.getHeight_Percentile()+
+        this.getHeight_RecordEncoding();
+    },
+    /** -- */
+    getHeight_Extra_max: function(){
+      return 7+
+        this.height_hist_topGap+
+        this.height_labels+
+        this.height_slider+
+        this.height_recEncoding
+        this.height_percentile;
+    },
+    /** -- */
+    getHeight_RecordEncoding: function(){
+      if(this.usedForSorting && this.browser.recordDisplay) {
+        if(this.browser.recordDisplay.displayType==='map' || this.browser.recordDisplay.displayType==='nodelink')
+          return this.height_recEncoding; 
+      }
+      return 0;
+    },
+    /** -- */
+    getHeight_Content: function(){
+      return this.height_hist + this.getHeight_Extra();
+    },
+    /** -- */
+    getHeight_Percentile: function(){
+      return this.percentileChartVisible ? this.height_percentile : 0;
+    },
+    /** -- */
+    getHeight_RangeMax: function(){
+      return this.height_hist_max + this.getHeight_Header() + this.getHeight_Extra_max();
+    },
+    /** -- */
+    getHeight_RangeMin: function(){
+      return this.height_hist_min + this.getHeight_Header() + this.getHeight_Extra_max();
+    },
+    /** -- */
+    getWidth_Chart: function(){
+      if(!this.inBrowser()) return 30;
+      return this.getWidth() - this.width_measureAxisLabel -
+        ( this.getWidth()>400 ? this.width_measureAxisLabel : 11 );
+    },
+    /** -- */
+    getWidth_OptimumTick: function(){
+      if(!this.inBrowser()) return 10;
+      return this.optimumTickWidth;
+    },
+    /** -- */
+    getWidth_Bin: function(){
+      return this.aggrWidth-this.width_barGap*2;
+    },
+    /** -- */
+    isFiltered_min: function(){
+      if(this.summaryFilter.active.min>this.intervalRange.total.min) return true;
+      if(this.scaleType==='log') return this.isFiltered_max();
+      return false;
+    },
+    /** -- */
+    isFiltered_max: function(){
+      return this.summaryFilter.active.max<this.intervalRange.getTotalMax();
+    },
+    /** -- */
+    getMaxAggr_Total: function(){
+      return d3.max(this.histBins,function(aggr){ return aggr.measure('Total'); });
+    },
+    /** -- */
+    getMaxAggr_Active: function(){
+      return d3.max(this.histBins,function(aggr){ return aggr.measure('Active'); });
     },
     /** -- */
     isTimeStamp: function(){
       return this.timeTyped.base;
     },
-    /** TODO: Only relevant is timeStamp-- */
+    /** -- */
     createMonthSummary: function(){
       if(!this.isTimeStamp()) return;
       if(this.summary_sub_month) return this.summary_sub_month;
@@ -8545,7 +8603,7 @@ var Summary_Interval_functions = {
       this.summary_sub_month.initializeAggregates();
       return this.summary_sub_month;
     },
-    /** TODO: Only relevant is timeStamp-- */
+    /** -- */
     createDaySummary: function(){
       if(!this.isTimeStamp()) return;
       if(this.summary_sub_day) return this.summary_sub_day;
@@ -8563,7 +8621,7 @@ var Summary_Interval_functions = {
       this.summary_sub_day.initializeAggregates();
       return this.summary_sub_day;
     },
-    /** TODO: Only relevant is timeStamp-- */
+    /** -- */
     createHourSummary: function(){
       if(!this.isTimeStamp()) return;
       if(this.summary_sub_hour) return this.summary_sub_hour;
@@ -8637,10 +8695,8 @@ var Summary_Interval_functions = {
         this.timeTyped.print = d3.time.format.utc(f);
       }
 
-      // Figure out lowest and highest time 
-
       // remove records that map to null / undefined
-      this.filteredItems = this.records.filter(function(record){
+      this.filteredRecords = this.records.filter(function(record){
         var v = me.getRecordValue(record);
         return (v!==undefined && v!==null);
       });
@@ -8649,7 +8705,7 @@ var Summary_Interval_functions = {
       var sortValue = this.isTimeStamp()?
         function(a){ return me.getRecordValue(a).getTime(); }:
         function(a){ return me.getRecordValue(a); };
-      this.filteredItems.sort(function(a,b){ return sortValue(a)-sortValue(b);});
+      this.filteredRecords.sort(function(a,b){ return sortValue(a)-sortValue(b); });
 
       this.updateIntervalRange_Total();
 
@@ -8659,10 +8715,6 @@ var Summary_Interval_functions = {
       this.aggr_initialized = true;
       this.refreshViz_Nugget();
       this.refreshViz_EmptyRecords();
-    },
-    /** -- */
-    isEmpty: function(){
-      return this._isEmpty;
     },
     /** -- */
     setStepTicks: function(v){
@@ -8708,7 +8760,7 @@ var Summary_Interval_functions = {
         var v = record._valueCache[me.summaryID];
         if(v>=me.intervalRange.active.min && v<me.intervalRange.getActiveMax()) return v; // value is within filtered range
       };
-      var deviation   = d3.deviation(this.filteredItems, inViewRecords);
+      var deviation   = d3.deviation(this.filteredRecords, inViewRecords);
       var activeRange = this.intervalRange.getActiveMax()-this.intervalRange.active.min;
 
       var _width_ = this.getWidth_Chart();
@@ -8722,7 +8774,7 @@ var Summary_Interval_functions = {
       }
 
       // LOG SCALE
-      if(deviation/activeRange<0.12 && this.intervalRange.active.min>=0){
+      if(deviation/activeRange<0.12 && this.intervalRange.org.min>0){
         this.setScaleType('log',false);
         return;
       }
@@ -8902,8 +8954,8 @@ var Summary_Interval_functions = {
     /** -- */
     updateIntervalRange_Total: function(){
       this.intervalRange.org = {
-        min: d3.min(this.filteredItems,this.getRecordValue),
-        max: d3.max(this.filteredItems,this.getRecordValue)
+        min: d3.min(this.filteredRecords,this.getRecordValue),
+        max: d3.max(this.filteredRecords,this.getRecordValue)
       }
 
       this._isEmpty = this.intervalRange.org.min===undefined;
@@ -8952,7 +9004,6 @@ var Summary_Interval_functions = {
       this.summaryFilter.active.min = Math.max(this.summaryFilter.active.min, this.intervalRange.active.min);
       this.summaryFilter.active.max = Math.min(this.summaryFilter.active.max, this.intervalRange.getActiveMax());
     },
-
     /** -- */
     setScaleType: function(t,force){
       var me=this;
@@ -8973,13 +9024,13 @@ var Summary_Interval_functions = {
         this.DOM.summaryInterval.attr("scaleType",this.scaleType);
       }
 
-      if(this.filteredItems === undefined) return;
+      if(this.filteredRecords === undefined) return;
 
       // remove records with value:0 (because log(0) is invalid)
       if(this.scaleType==='log'){
         if(this.intervalRange.total.min<=0){
-          var x=this.filteredItems.length;
-          this.filteredItems = this.filteredItems.filter(function(record){ 
+          var x=this.filteredRecords.length;
+          this.filteredRecords = this.filteredRecords.filter(function(record){ 
             var v=this.getRecordValue(record)!==0;
             if(v===false) {
               record._valueCache[this.summaryID] = null;
@@ -8996,87 +9047,13 @@ var Summary_Interval_functions = {
       if(this.usedForSorting) this.browser.recordDisplay.refreshRecordColors();
     },
     /** -- */
-    getHeight_RecordEncoding: function(){
-      if(this.usedForSorting===false) return 0;
-      if(this.browser.recordDisplay===undefined) return 0;
-      if(this.browser.recordDisplay.displayType==='map') return 20; 
-      if(this.browser.recordDisplay.displayType==='nodelink') return 20; 
-      return 0;
-    },
-    /** -- */
-    getHeight_Content: function(){
-      return this.height_hist + this.getHeight_Extra();
-    },
-    /** -- */
-    getHeight_Percentile: function(){
-      return this.percentileChartVisible ? 32 : 0;
-    },
-    /** -- */
-    getHeight_Extra: function(){
-      return 7+
-        this.height_hist_topGap+
-        this.height_labels+
-        this.height_slider+
-        this.getHeight_Percentile()+
-        this.getHeight_RecordEncoding();
-    },
-    /** -- */
-    getHeight_Extra_max: function(){
-      return 7+
-        this.height_hist_topGap+
-        this.height_slider+
-        50;
-    },
-    /** -- */
-    getHeight_RangeMax: function(){
-      return this.height_hist_max + this.getHeight_Header() + this.getHeight_Extra_max();
-    },
-    /** -- */
-    getHeight_RangeMin: function(){
-      return this.height_hist_min + this.getHeight_Header() + this.getHeight_Extra_max();
-    },
-    /** -- */
-    getWidth_Chart: function(){
-      if(this.panel===undefined) return 30;
-      return this.getWidth() - this.width_measureAxisLabel -
-        ( this.getWidth()>400 ? this.width_measureAxisLabel : 11 );
-    },
-    /** -- */
-    getWidth_OptimumTick: function(){
-      if(this.panel===undefined) return 10;
-      return this.optimumTickWidth;
-    },
-    /** -- */
-    getWidth_Bin: function(){
-      return this.aggrWidth-this.width_barGap*2;
-    },
-    /** -- */
-    isFiltered_min: function(){
-      if(this.summaryFilter.active.min>this.intervalRange.total.min) return true;
-      if(this.scaleType==='log') return this.isFiltered_max();
-      return false;
-    },
-    /** -- */
-    isFiltered_max: function(){
-      return this.summaryFilter.active.max<this.intervalRange.getTotalMax();
-    },
-    /** -- */
-    getMaxAggr_Total: function(){
-      return d3.max(this.histBins,function(aggr){ return aggr.measure('Total'); });
-    },
-    /** -- */
-    getMaxAggr_Active: function(){
-      return d3.max(this.histBins,function(aggr){ return aggr.measure('Active'); });
-    },
-    /** -- */
     refreshPercentileChart: function(){
       this.DOM.percentileGroup
         .style("opacity",this.percentileChartVisible?1:0)
         .attr("percentileChartVisible",this.percentileChartVisible);
       if(this.percentileChartVisible){
-        this.DOM.percentileGroup.style("height",30+"px");
+        this.DOM.percentileGroup.style("height",(this.height_percentile-2)+"px");
       }
-
       this.DOM.summaryConfig.selectAll(".summaryConfig_Percentile .configOption").attr("active",false);
       this.DOM.summaryConfig.selectAll(".summaryConfig_Percentile .pos_"+this.percentileChartVisible).attr("active",true);
     },
@@ -9134,7 +9111,7 @@ var Summary_Interval_functions = {
             me.highlightRangeLimits_Active = true;
             // Set preview selection
             var records = [];
-            me.filteredItems.forEach(function(record){ 
+            me.filteredRecords.forEach(function(record){ 
               var v = me.getRecordValue(record);
               if(v>=minPos && v<=maxPos) records.push(record);
               else record.remForHighlight(true);
@@ -9241,6 +9218,7 @@ var Summary_Interval_functions = {
     /** -- */
     printWithUnitName: function(v,noDiv){
       if(v instanceof Date) return this.timeTyped.print(v);
+      v = v.toLocaleString();
       if(this.unitName){
         var s = noDiv ? this.unitName : ("<span class='unitName'>"+this.unitName+"</span>");
         return (this.unitName==='$' || this.unitName==='€') ? (s+v) : (v+s); // currency comes before
@@ -9261,10 +9239,10 @@ var Summary_Interval_functions = {
     initDOM_IntervalConfig: function(){
       var me=this, x;
 
-      var summaryConfig_UnitName = this.DOM.summaryConfig.append("div")
+      this.DOM.summaryConfig_UnitName = this.DOM.summaryConfig.append("div")
         .attr("class","summaryConfig_UnitName summaryConfig_Option");
-      summaryConfig_UnitName.append("span").text("Value Unit: ");
-      this.DOM.unitNameInput = summaryConfig_UnitName.append("input").attr("type","text")
+      this.DOM.summaryConfig_UnitName.append("span").text("Value Unit: ");
+      this.DOM.unitNameInput = this.DOM.summaryConfig_UnitName.append("input").attr("type","text")
         .attr("class","unitNameInput")
         .attr("placeholder",kshf.unitName)
         .attr("maxlength",5)
@@ -9278,10 +9256,10 @@ var Summary_Interval_functions = {
         });;
 
       // Show the linear/log scale transformation only if...
-      if(this.scaleType!=='time' && !this.stepTicks && this.intervalRange.total.min>=0){
+      if(this.scaleType!=='time' && !this.stepTicks && this.intervalRange.org.min>0){
         this.DOM.summaryConfig_ScaleType = this.DOM.summaryConfig.append("div")
           .attr("class","summaryConfig_ScaleType summaryConfig_Option");
-        this.DOM.summaryConfig_ScaleType.append("span").html("<i class='fa fa-arrows-h'></i> Scale: ");
+        this.DOM.summaryConfig_ScaleType.append("span").html("<i class='fa fa-arrows-h'></i> Bin Scale: ");
         x = this.DOM.summaryConfig_ScaleType.append("span").attr("class","optionGroup");
         x.selectAll(".configOption").data(
           [
@@ -9295,20 +9273,20 @@ var Summary_Interval_functions = {
           .on("click", function(d){ me.setScaleType(d.v.toLowerCase(),true); })
       }
 
-      var summaryConfig_Percentile = this.DOM.summaryConfig.append("div")
+      this.DOM.summaryConfig_Percentile = this.DOM.summaryConfig.append("div")
         .attr("class","summaryConfig_Percentile summaryConfig_Option");
-      summaryConfig_Percentile.append("span").text("Percentile Charts: ")
-      x = summaryConfig_Percentile.append("span").attr("class","optionGroup");
-      x.selectAll(".configOption").data(
+      this.DOM.summaryConfig_Percentile.append("span").text("Percentile Chart: ")
+      this.DOM.summaryConfig_Percentile.append("span").attr("class","optionGroup")
+        .selectAll(".configOption").data(
         [ {l:"<i class='bl_Active'></i><i class='bl_Highlight'></i>"+
             "<i class='bl_Compare_A'></i><i class='bl_Compare_B'></i><i class='bl_Compare_C'></i> Show",v:"Extended"},
           {l:"<i class='fa fa-eye-slash'></i> Hide",v:false}
         ]).enter()
         .append("span")
-        .attr("class",function(d){ return "configOption pos_"+d.v;})
-        .attr("active",function(d){ return d.v===me.percentileChartVisible; })
-        .html(function(d){ return d.l; })
-        .on("click", function(d){ me.showPercentileChart(d.v); });
+          .attr("class",function(d){ return "configOption pos_"+d.v;})
+          .attr("active",function(d){ return d.v===me.percentileChartVisible; })
+          .html(function(d){ return d.l; })
+          .on("click", function(d){ me.showPercentileChart(d.v); });
     },
     /** -- */
     initDOM_Percentile: function(){
@@ -9318,15 +9296,16 @@ var Summary_Interval_functions = {
       this.DOM.percentileGroup = this.DOM.summaryInterval.append("div").attr("class","percentileGroup");
       this.DOM.percentileGroup.append("span").attr("class","percentileTitle").html(kshf.lang.cur.Percentiles);
 
-      this.DOM.quantile = {};
-
       function addPercentileDOM(distr){
         var parent = me.DOM.percentileGroup.append("div").attr("class","percentileChart_"+distr);
 
-        [[10,90],[20,80],[30,70],[40,60]].forEach(function(qb){
-          this.DOM.quantile[distr+qb[0]+"_"+qb[1]] = parent.append("span")
-            .attr("class","quantile q_range q_"+qb[0]+"_"+qb[1])
-            .each(function(){
+        parent.selectAll(".aggrGlyph").data([ 
+          [10,20,1],[20,30,2],[30,40,3],[40,50,4],[50,60,4],[60,70,3],[70,80,2],[80,90,1] 
+        ]).enter()
+          .append("span")
+            .attr("class",function(qb){ return "quantile aggrGlyph q_range qG"+qb[2]; })
+            .each(function(qb){
+              this.__data__.summary = me;
               this.tipsy = new Tipsy(this, {
                 gravity: 's',
                 title: function(){
@@ -9337,10 +9316,10 @@ var Summary_Interval_functions = {
                 }
               })
             })
-            .on("mouseover",function(){ 
+            .on("mouseover",function(qb){ 
               this.tipsy.show();
               var records = [];
-              me.filteredItems.forEach(function(record){ 
+              me.filteredRecords.forEach(function(record){ 
                 var v = me.getRecordValue(record);
                 if(v>=me.quantile_val[distr+qb[0]] && v<=me.quantile_val[distr+qb[1]]) records.push(record);
               });
@@ -9355,7 +9334,7 @@ var Summary_Interval_functions = {
               this.tipsy.hide();
               me.browser.clearSelect_Highlight();
             })
-            .on("click", function(){
+            .on("click", function(qb){
               if(d3.event.shiftKey){
                 me.browser.flexAggr_Compare_A.minV = me.quantile_val[distr+qb[0]];
                 me.browser.flexAggr_Compare_A.maxV = me.quantile_val[distr+qb[1]];
@@ -9368,21 +9347,18 @@ var Summary_Interval_functions = {
               };
               me.summaryFilter.filteredBin = undefined;
               me.summaryFilter.addFilter();
-            })
-            ;
-        },this);
+            });
 
-        [10,20,30,40,50,60,70,80,90].forEach(function(q){
-          this.DOM.quantile[distr+q] = parent.append("span")
-            .attr("class","quantile q_pos q_"+q)
-            .each(function(){
+        parent.selectAll(".q_pos").data([10,20,30,40,50,60,70,80,90]).enter()
+          .append("span")
+            .attr("class",function(q){ return "quantile q_pos q_"+q; })
+            .each(function(q){
               this.tipsy = new Tipsy(this, {
                 gravity: 's', title: function(){ return "<u>Median:</u><br> "+ me.quantile_val[distr+q]; }
               });
             })
             .on("mouseover",function(){ this.tipsy.show(); })
             .on("mouseout" ,function(){ this.tipsy.hide(); });
-        },this);
       };
 
       addPercentileDOM.call(this, "Active");
@@ -9701,7 +9677,7 @@ var Summary_Interval_functions = {
         this.histBins.pop(); // remove last bin
 
         // distribute records across bins
-        this.filteredItems.forEach(function(record){
+        this.filteredRecords.forEach(function(record){
           var v = this.getRecordValue(record);
           // DO NOT CHANGE BELOW
           if(v===null || v===undefined || v<this.intervalRange.active.min || v>this.intervalRange.getActiveMax()) return;
@@ -9945,15 +9921,14 @@ var Summary_Interval_functions = {
         .on("click",function(aggr){ me.onAggrClick(aggr); });
 
       ["Total","Active","Highlight","Compare_A","Compare_B","Compare_C"].forEach(function(m){
-        newBins.append("span").attr("class","measure_"+m);
+        var X = newBins.append("span").attr("class","measure_"+m);
+        if(m!=="Total" && m!=="Active" && m!=="Highlight"){
+          X.on("mouseenter" ,function(){ me.browser.refreshMeasureLabels(this.classList[0].substr(8)); });
+          X.on("mouseleave", function(){ me.browser.refreshMeasureLabels("Active"); });
+        }
       });
 
-      newBins.selectAll("[class^='measure_Compare_']")
-        .on("mouseover" ,function(){ me.browser.refreshMeasureLabels(this.classList[0].substr(8)); })
-        .on("mouseleave",function(){ me.browser.refreshMeasureLabels(); });
-
       newBins.append("span").attr("class","total_tip");
-
       newBins.append("span").attr("class","lockButton fa")
         .each(function(aggr){
           this.tipsy = new Tipsy(this, {
@@ -9967,7 +9942,6 @@ var Summary_Interval_functions = {
           d3.event.stopPropagation();
         })
         .on("mouseenter",function(aggr){
-          this.tipsy.options.className = "tipsyFilterLock";
           this.tipsy.hide();
           this.tipsy.show();
           d3.event.stopPropagation();
@@ -9982,15 +9956,13 @@ var Summary_Interval_functions = {
         kshf.Util.setTransform(this,"translateY("+me.height_hist+"px)");
       });
 
-      this.DOM.aggrGlyphs    = this.DOM.histogram_bins.selectAll(".aggrGlyph");
-
+      this.DOM.aggrGlyphs      = this.DOM.histogram_bins.selectAll(".aggrGlyph");
       this.DOM.measureLabel    = this.DOM.aggrGlyphs.selectAll(".measureLabel");
       this.DOM.measureTotalTip = this.DOM.aggrGlyphs.selectAll(".total_tip");
+      this.DOM.lockButton      = this.DOM.aggrGlyphs.selectAll(".lockButton");
       ["Total","Active","Highlight","Compare_A","Compare_B","Compare_C"].forEach(function(m){
         this.DOM["measure_"+m] = this.DOM.aggrGlyphs.selectAll(".measure_"+m);
       },this);
-
-      this.DOM.lockButton = this.DOM.aggrGlyphs.selectAll(".lockButton");
     },
     /** -- */
     map_refreshColorScale: function(){
@@ -10043,7 +10015,7 @@ var Summary_Interval_functions = {
 
           var r = me.valueScale.range()[1]/9;
           var records = [];
-          me.filteredItems.forEach(function(record){ 
+          me.filteredRecords.forEach(function(record){ 
             var v = me.getRecordValue(record);
             if(v>=this._minValue && v<=this._maxValue) records.push(record);
           },this);
@@ -10083,10 +10055,7 @@ var Summary_Interval_functions = {
         })
         .on("mouseenter",function(){ this.tipsy.show(); })
         .on("mouseleave",function(){ this.tipsy.hide(); })
-        .on("click",function(){
-          this.tipsy.hide();
-          me.setZoomed(this.getAttribute("sign")==="plus");
-        });
+        .on("click",     function(){ this.tipsy.hide(); me.setZoomed(this.getAttribute("sign")==="plus"); });
 
       var controlLine = this.DOM.intervalSlider.append("div").attr("class","controlLine")
         .on("mousedown", function(){
@@ -10120,14 +10089,14 @@ var Summary_Interval_functions = {
         });
 
       controlLine.append("span").attr("class","base total");
-      controlLine.append("span").attr("class","base active")
+
+      this.DOM.activeBaseRange = controlLine.append("span").attr("class","base active")
         .each(function(){ this.tipsy = new Tipsy(this, { gravity: "s", title: kshf.lang.cur.DragToFilter }); })
         // TODO: The problem is, the x-position (left-right) of the tooltip is not correctly calculated
         // because the size of the bar is set by scaling, not through width....
-        .on("mouseover",function(){ this.tipsy.show(); })
-        .on("mouseout" ,function(){ this.tipsy.hide(); })
-        .on("mousedown", function(){
-          this.tipsy.hide();
+        .on("mouseenter", function(){ this.tipsy.show(); })
+        .on("mouseleave", function(){ this.tipsy.hide(); })
+        .on("mousedown",  function(){ this.tipsy.hide();
           if(d3.event.which !== 1) return; // only respond to left-click
           if(me.scaleType==='time') return; // time is not supported for now.
 
@@ -10188,23 +10157,26 @@ var Summary_Interval_functions = {
           d3.event.stopPropagation();
         });
 
-      controlLine.selectAll(".handle").data(['min','max']).enter()
-        .append("span").attr("class",function(d){ return "handle "+d; })
+      this.DOM.rangeHandle = controlLine.selectAll(".rangeHandle").data(['min','max']).enter()
+        .append("span").attr("class",function(d){ return "rangeHandle "+d; })
         .each(function(d,i){
           this.tipsy = new Tipsy(this, { gravity: i==0?"w":"e", title: kshf.lang.cur.DragToFilter });
         })
-        .on("mouseover",function(){ if(this.dragging!==true) this.tipsy.show(); })
-        .on("mouseout" ,function(){ this.tipsy.hide(); })
+        .on("mouseenter", function(){ if(!this.dragging){ this.tipsy.show(); this.setAttribute("dragging",true);} })
+        .on("mouseleave", function(){ if(!this.dragging){ 
+          this.tipsy.hide(); this.removeAttribute("dragging");
+        } })
         .on("mousedown", function(d,i){
           this.tipsy.hide();
           if(d3.event.which !== 1) return; // only respond to left-click
 
           me.browser.DOM.root.attr("adjustWidth",true).attr("pointerEvents",false);
+          this.setAttribute("dragging",true);
 
           var mee = this;
+          mee.dragging = true;
           var e=this.parentNode;
           d3.select("body").on("mousemove", function() {
-            mee.dragging = true;
             var targetPos = me.valueScale.invert(d3.mouse(e)[0]);
             me.summaryFilter.active[d] = targetPos;
             // Swap is min > max
@@ -10228,13 +10200,13 @@ var Summary_Interval_functions = {
             },200);
           }).on("mouseup", function(){
             mee.dragging = false;
+            mee.removeAttribute("dragging");
             me.browser.DOM.root.attr("adjustWidth",null).attr("pointerEvents",true);;
             d3.select("body").style('cursor','auto').on("mousemove",null).on("mouseup",null);
           });
           d3.event.preventDefault();
           d3.event.stopPropagation();
-        })
-        .append("span").attr("class","rangeLimitOnChart");
+        });
 
       this.DOM.recordValue = controlLine.append("div").attr("class","recordValue");
       this.DOM.recordValue.append("span").attr("class","recordValueScaleMark");
@@ -10254,9 +10226,15 @@ var Summary_Interval_functions = {
     refreshBins_Translate: function(){
       var me=this;
       var offset = (this.stepTicks)? this.width_barGap : 0;
-      this.DOM.aggrGlyphs
-        .style("width",this.getWidth_Bin()+"px")
-        .each(function(aggr){ kshf.Util.setTransform(this,"translateX("+(me.valueScale(aggr.minV)+offset)+"px)"); });
+      if(this.scaleType==="time"){
+        this.DOM.aggrGlyphs
+          .style("width",function(aggr){ return (me.valueScale(aggr.maxV)-me.valueScale(aggr.minV))+"px"; })
+          .each(function(aggr){ kshf.Util.setTransform(this,"translateX("+(me.valueScale(aggr.minV)+ 1)+"px)"); });;
+      } else {
+        this.DOM.aggrGlyphs
+          .style("width",this.getWidth_Bin()+"px")
+          .each(function(aggr){ kshf.Util.setTransform(this,"translateX("+(me.valueScale(aggr.minV)+offset)+"px)"); });
+      }
     },
     /** -- */
     refreshViz_Scale: function(){
@@ -10276,12 +10254,16 @@ var Summary_Interval_functions = {
       };
 
       if(this.scaleType==='time'){
-        var durationTime=this.browser.noAnim?0:700;
-        this.timeSVGLine = d3.svg.area().interpolate("cardinal")
-          .x(function(aggr){ return me.valueScale(aggr.minV)+width/2; })
-          .y0(me.height_hist)
-          .y1(function(aggr){ return (aggr._measure.Total===0) ? (me.height_hist+3) : (me.height_hist-heightTotal(aggr)); });
-        this.DOM.measure_Total_Area.transition().duration(durationTime).attr("d", this.timeSVGLine);
+        this.DOM.measure_Total_Area
+          .transition().duration(this.browser.noAnim?0:700)
+          .attr("d", 
+            d3.svg.area().interpolate("cardinal")
+              .x(this.timeAxis_XFunc)
+              .y0(me.height_hist)
+              .y1(function(aggr){ 
+                return (aggr._measure.Total===0) ? (me.height_hist+3) : (me.height_hist-heightTotal(aggr));
+              }));
+          ;
       } else {
         this.DOM.measure_Total.each(function(aggr){
           kshf.Util.setTransform(this, "translateY("+me.height_hist+"px) scale("+width+","+heightTotal(aggr)+")");
@@ -10320,18 +10302,20 @@ var Summary_Interval_functions = {
       // Time (line chart) update
       if(this.scaleType==='time'){
         var durationTime = this.browser.noAnim ? 0 : 700;
-        var xFunc = function(aggr){ return me.valueScale(aggr.minV)+width/2; };
-        this.timeSVGLine = d3.svg.area().interpolate("cardinal")
-          .x(xFunc).y0(me.height_hist+2)
-          .y1(function(aggr){
-              return (aggr._measure.Active===0) ? me.height_hist+3 : (me.height_hist-heightActive(aggr)+1);
-          });
-
-        this.DOM.measure_Active_Area.transition().duration(durationTime).attr("d", this.timeSVGLine);
+        this.DOM.measure_Active_Area
+          .transition().duration(durationTime)
+          .attr("d", 
+            d3.svg.area().interpolate("cardinal")
+              .x (this.timeAxis_XFunc)
+              .y0(me.height_hist+2)
+              .y1(function(aggr){
+                  return (aggr._measure.Active===0) ? me.height_hist+3 : (me.height_hist-heightActive(aggr)+1);
+              })
+            );
 
         this.DOM.lineTrend_ActiveLine.transition().duration(durationTime)
-          .attr("x1",xFunc)
-          .attr("x2",xFunc)
+          .attr("x1",this.timeAxis_XFunc)
+          .attr("x2",this.timeAxis_XFunc)
           .attr("y1",function(aggr){ return me.height_hist+3; })
           .attr("y2",function(aggr){
             return (aggr._measure.Active===0) ? (me.height_hist+3) : (me.height_hist - heightActive(aggr)+1);
@@ -10400,14 +10384,17 @@ var Summary_Interval_functions = {
         var yFunc = function(aggr){
           return (aggr._measure[compId]===0) ? (me.height_hist+3) : (me.height_hist-heightCompare(aggr));
         };
-        var xFunc = function(aggr){ return me.valueScale(aggr.minV)+width/2; };
 
         var dTime = 200;
-        this.timeSVGLine = d3.svg.area().interpolate("cardinal").x(xFunc).y(yFunc);
-        this.DOM["measure_Compare_Area_"+cT].transition().duration(dTime).attr("d", this.timeSVGLine);
+        this.DOM["measure_Compare_Area_"+cT]
+          .transition().duration(dTime)
+          .attr("d", d3.svg.area().interpolate("cardinal").x(this.timeAxis_XFunc).y(yFunc));
+
         this.DOM["measure_Compare_Line_"+cT].transition().duration(dTime)
-          .attr("y1",me.height_hist+3 ).attr("y2",yFunc)
-          .attr("x1",xFunc).attr("x2",xFunc);
+          .attr("y1",me.height_hist+3 )
+          .attr("y2",yFunc)
+          .attr("x1",this.timeAxis_XFunc)
+          .attr("x2",this.timeAxis_XFunc);
         return;
       }
 
@@ -10489,18 +10476,19 @@ var Summary_Interval_functions = {
         var yFunc = function(aggr){
           return (aggr._measure.Highlight===0) ? (me.height_hist+3) : (me.height_hist-getAggrHeight_Preview(aggr));
         };
-        var xFunc = function(aggr){ return me.valueScale(aggr.minV)+width/2; };
         var dTime=200;
-        this.timeSVGLine = d3.svg.area().interpolate("cardinal")
-          .x(xFunc)
-          .y0(me.height_hist+2)
-          .y1(yFunc);
-        this.DOM.measure_Highlight_Area.transition().duration(dTime).attr("d", this.timeSVGLine);
+        this.DOM.measure_Highlight_Area
+          .transition().duration(dTime)
+          .attr("d", 
+            d3.svg.area().interpolate("cardinal")
+              .x(this.timeAxis_XFunc)
+              .y0(me.height_hist+2)
+              .y1(yFunc));
         this.DOM.measure_Highlight_Line.transition().duration(dTime)
           .attr("y1",me.height_hist+3)
           .attr("y2",yFunc)
-          .attr("x1",xFunc)
-          .attr("x2",xFunc);
+          .attr("x1",this.timeAxis_XFunc)
+          .attr("x2",this.timeAxis_XFunc);
       } else {
         if(!this.browser.vizActive.Highlight){
           var xx = (width / (totalC+1));
@@ -10642,11 +10630,10 @@ var Summary_Interval_functions = {
           this.style.left = minPos+"px";
           this.style.width = (maxPos-minPos)+"px";
           //kshf.Util.setTransform(this,"translateX("+minPos+"px) scaleX("+(maxPos-minPos)+")");
+          // Rendering update slowdown if the above translation is used. Weird...
         });
-      this.DOM.intervalSlider.selectAll(".handle")
-        .each(function(d){
-          kshf.Util.setTransform(this,"translateX("+((d==="min")?minPos:maxPos)+"px)");
-        });
+      this.DOM.intervalSlider.selectAll(".rangeHandle")
+        .each(function(d){ kshf.Util.setTransform(this,"translateX("+((d==="min")?minPos:maxPos)+"px)"); });
     },
     /** -- */
     refreshHeight: function(){
@@ -10670,14 +10657,13 @@ var Summary_Interval_functions = {
       
       this.DOM.wrapper.attr("showMeasureAxis_2",wideChart?"true":null);
 
-      this.DOM.summaryInterval
-        .style("width",this.getWidth()+"px")
-        .style("padding-left", this.width_measureAxisLabel+"px")
-        .style("padding-right", ( wideChart ? this.width_measureAxisLabel : 11)+"px");
+      this.DOM.summaryInterval.style({
+        'width'        : this.getWidth()+"px",
+        'padding-left' : this.width_measureAxisLabel+"px",
+        'padding-right': ( wideChart ? this.width_measureAxisLabel : 11)+"px" });
       
       this.DOM.summaryName.style("max-width",(this.getWidth()-40)+"px");
-      if(this.DOM.timeSVG)
-          this.DOM.timeSVG.style("width",(chartWidth+2)+"px")
+      if(this.DOM.timeSVG) this.DOM.timeSVG.style("width",(chartWidth+2)+"px")
     },
     /** -- */
     setHeight: function(targetHeight){
@@ -10697,9 +10683,9 @@ var Summary_Interval_functions = {
       this.refreshHeight();
 
       this.DOM.labelGroup.style("height",this.height_labels+"px");
-      this.DOM.intervalSlider.selectAll(".rangeLimitOnChart")
-        .style("height",(this.height_hist+13)+"px")
-        .style("top",(-this.height_hist-13)+"px");
+      this.DOM.rangeHandle.style({
+        height: ( this.height_hist+23)+"px",
+        top:    (-this.height_hist-13)+"px" });
       this.DOM.highlightRangeLimits.style("height",this.height_hist+"px");
     },
     /** -- */
@@ -10760,25 +10746,23 @@ var Summary_Interval_functions = {
           if(v!==null) values.push(v);
         }); */
       }
-      this.filteredItems.forEach(collectFunc);
+      this.filteredRecords.forEach(collectFunc);
 
       [10,20,30,40,50,60,70,80,90].forEach(function(q){
-        var x =d3.quantile(values,q/100);
-        this.quantile_val[distr+q] = x;
-        this.quantile_pos[distr+q] = this.valueScale(x);
+        this.quantile_val[distr+q] = d3.quantile(values,q/100);
       },this);
 
-      this.DOM.percentileGroup.select(".percentileChart_"+distr).style("opacity",1);
+      var percentileChart = this.DOM.percentileGroup.select(".percentileChart_"+distr);
 
-      [10,20,30,40,50,60,70,80,90].forEach(function(q){
-        kshf.Util.setTransform(this.DOM.quantile[distr+q][0][0],"translateX("+this.quantile_pos[distr+q]+"px)");
-      },this);
-
-      [[10,90],[20,80],[30,70],[40,60]].forEach(function(qb){
-        kshf.Util.setTransform(this.DOM.quantile[distr+qb[0]+"_"+qb[1]][0][0],
-          "translateX("+(this.quantile_pos[distr+qb[0]])+"px) "+
-          "scaleX("+(this.quantile_pos[distr+qb[1]]-this.quantile_pos[distr+qb[0]])+") ");
-      },this);
+      percentileChart.style({opacity: 1, "margin-left": (this.stepTicks ? ((this.aggrWidth/2)+"px") : null) });
+      percentileChart.selectAll(".q_pos")
+        .each(function(q){ kshf.Util.setTransform(this,"translateX("+me.valueScale(me.quantile_val[distr+q])+"px)"); });
+      percentileChart.selectAll(".quantile.aggrGlyph")
+        .each(function(qb){
+          var pos_1 = me.valueScale(me.quantile_val[distr+qb[0]]);
+          var pos_2 = me.valueScale(me.quantile_val[distr+qb[1]]);
+          kshf.Util.setTransform(this,"translateX("+pos_1+"px) scaleX("+(pos_2-pos_1)+") ");
+        });
     },
 };
 for(var index in Summary_Interval_functions){
@@ -10948,7 +10932,7 @@ var Summary_Clique_functions = {
           me.gridPan_x = Math.min(0,gridPan_x_init+difX+difY);
           me.checkPan();
 
-          var maxHeight = me.setListSummary.heightRow_category*me.setListSummary._cats.length - h;
+          var maxHeight = me.setListSummary.heightCat*me.setListSummary._cats.length - h;
 
           var t = initT-difY;
               t = Math.min(maxHeight,Math.max(0,t));
@@ -11016,7 +11000,7 @@ var Summary_Clique_functions = {
   },
   /** -- */
   getRowHeight: function(){
-    return this.setListSummary.heightRow_category;
+    return this.setListSummary.heightCat;
   },
   /** -- */
   getSetPairCount_Total: function(){
@@ -11033,7 +11017,7 @@ var Summary_Clique_functions = {
   },
   /** -- */
   updateSetPairScale: function(){
-    this.setPairDiameter = this.setListSummary.heightRow_category;
+    this.setPairDiameter = this.setListSummary.heightCat;
     this.setPairRadius = this.setPairDiameter/2;
   },
   /** -- */
@@ -11116,18 +11100,16 @@ var Summary_Clique_functions = {
   onSetPairEnter: function(aggr){
     aggr.set_1.DOM.matrixRow.setAttribute("selection","selected");
     aggr.set_2.DOM.matrixRow.setAttribute("selection","selected");
-    aggr.set_1.DOM.aggrGlyph.setAttribute("selectType","and");
-    aggr.set_2.DOM.aggrGlyph.setAttribute("selectType","and");
-    aggr.set_1.DOM.aggrGlyph.setAttribute("selection","selected");
-    aggr.set_2.DOM.aggrGlyph.setAttribute("selection","selected");
+    aggr.set_1.DOM.aggrGlyph.setAttribute("cSelection","and");
+    aggr.set_2.DOM.aggrGlyph.setAttribute("cSelection","and");
     this.browser.setSelect_Highlight(aggr);
   },
   /** -- */
   onSetPairLeave: function(aggr){
     aggr.set_1.DOM.matrixRow.removeAttribute("selection");
     aggr.set_2.DOM.matrixRow.removeAttribute("selection");
-    aggr.set_1.DOM.aggrGlyph.removeAttribute("selection");
-    aggr.set_2.DOM.aggrGlyph.removeAttribute("selection");
+    aggr.set_1.DOM.aggrGlyph.removeAttribute("cSelection");
+    aggr.set_2.DOM.aggrGlyph.removeAttribute("cSelection");
     this.browser.clearSelect_Highlight();
   },
   /** -- */
@@ -11421,7 +11403,6 @@ var Summary_Clique_functions = {
     this.DOM.root
       .style(this.popupSide,(-w)+"px")
       .style(this.popupSide==="left"?"right":"left","initial");
-      ;
     if(!this.pausePanning) this.refreshSVGViewBox();
   },
   /** -- */
@@ -11689,6 +11670,10 @@ var Summary_Clique_functions = {
         this.style.strokeDashoffset = halfCircle+"px";
       });
     }
+  },
+  /** -- */
+  isFiltered: function(){
+    return this.setListSummary.isFiltered();
   },
   /** -- */
   updateAfterFilter: function () {
